@@ -102,6 +102,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！Lead 可能发来紧急指令（比如"停止当前任务"），这些应该比自主发现的任务优先处理。收件箱是"上级指令"，任务板是"待办事项"。',
   },
+  {
+    question: 'scan_unclaimed_tasks 的三个过滤条件是什么？',
+    options: [
+      'status == completed, 有 owner, 依赖未满足',
+      'status == pending, 无 owner, 依赖已满足',
+      'status == in_progress, 有 owner, 依赖已满足',
+      'status == pending, 有 owner, 依赖未满足',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！只有 pending（未开始）、无 owner（没人认领）、依赖已满足（can_start 返回 true）的任务才会被自动认领。',
+  },
 ]);
 </script>
 

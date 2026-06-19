@@ -87,6 +87,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！如果所有客户端都在 1s、2s、4s 同一时刻重试，会再次触发限流。加随机抖动让重试分散到不同时间点。',
   },
+  {
+    question: '连续 3 次 529 错误后会发生什么？',
+    options: [
+      '放弃重试，抛出异常',
+      '切换到备用模型继续',
+      '等待 30 秒后重试',
+      '请求用户手动干预',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！RecoveryState 追踪连续 529 次数，达到阈值后自动切换到 FALLBACK_MODEL。这就像 CDN 故障切换——主节点不行就用备用节点。',
+  },
 ]);
 </script>
 

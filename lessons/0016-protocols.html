@@ -93,6 +93,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！没有类型验证的话，一个 "好的" 消息可能被误判为任何请求的响应。类型验证确保每个响应只能匹配对应类型的请求。',
   },
+  {
+    question: 'ProtocolState 的 request_id 有什么作用？',
+    options: [
+      '标识消息的发送者',
+      '关联请求和响应，实现异步消息匹配',
+      '加密消息内容',
+      '限制消息长度',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！每个请求有唯一 ID，响应中携带相同的 ID，这样处理器就能知道"这个回复是对应哪个请求的"。这就是异步请求-响应关联的核心。',
+  },
 ]);
 </script>
 

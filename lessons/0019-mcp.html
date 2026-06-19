@@ -99,6 +99,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！命名空间隔离防止冲突（两个服务器可能都有 "search" 工具），同时一眼就能看出工具来自哪个服务器。',
   },
+  {
+    question: '在 for 循环中创建 lambda 时，为什么要用默认参数捕获变量？',
+    options: [
+      '为了让代码更短',
+      'Python lambda 的默认参数在定义时求值，避免闭包陷阱',
+      '为了提高执行速度',
+      'Python 语法强制要求',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！如果不用默认参数，所有 lambda 会共享循环变量的最终值。lambda *, c=client: ... 中的 c=client 在 lambda 创建时就捕获了当前值。这和 JS 的 var vs let 问题类似。',
+  },
 ]);
 </script>
 

@@ -104,6 +104,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！如果 Agent 正在处理用户对话，突然注入一个 cron 任务会打乱上下文。lock 确保只在空闲时注入。',
   },
+  {
+    question: 'durable: true 的 cron 任务有什么特殊之处？',
+    options: [
+      '执行速度更快',
+      '持久化到磁盘，进程重启后仍然存在',
+      '可以并行执行',
+      '不需要锁保护',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！非持久化的 cron 任务在进程重启后丢失，持久化的会保存到 .scheduled_tasks.json，重启后继续执行。',
+  },
 ]);
 </script>
 

@@ -10,32 +10,26 @@
 
 <h1>第 3 课: Permission — 权限系统</h1>
 
-<p class="info">模型有了工具，但它想删文件就删文件。这一课加上<strong>三道安全门</strong>。</p>
+<p class="info">模型有了工具，但它想删文件就删文件。这一课加上<strong>两道安全关卡</strong>。</p>
 
-<h2>三道门</h2>
+<h2>两道关卡</h2>
 
 <div class="diagram">
 <pre>
   工具调用请求
     │
     ▼
-  ┌──────────┐
-  │ Gate 1:  │ ── 命中黑名单? ──> 直接拒绝
-  │ 硬拒绝    │
-  └────┬─────┘
+  ┌──────────────┐
+  │ 关卡 1:      │ ── 命中黑名单? ──> 直接拒绝
+  │ 硬拒绝        │
+  └────┬─────────┘
        │ 通过
        ▼
-  ┌──────────┐
-  │ Gate 2:  │ ── 匹配规则? ──> 需要用户确认
-  │ 规则匹配  │
-  └────┬─────┘
+  ┌──────────────┐
+  │ 关卡 2:      │ ── 匹配规则? ──> 弹出确认提示
+  │ 规则匹配      │                  用户输入 y/N
+  └────┬─────────┘                  ──> 拒绝
        │ 不匹配
-       ▼
-  ┌──────────┐
-  │ Gate 3:  │ ── 用户输入 y/N
-  │ 用户确认  │
-  └────┬─────┘
-       │ 确认
        ▼
     执行工具
 </pre>
@@ -43,10 +37,10 @@
 
 <h2>代码实现</h2>
 
-<pre><code># Gate 1: 黑名单 — 绝对不能执行
+<pre><code># 关卡 1: 黑名单 — 绝对不能执行
 DENY_LIST = ["rm -rf /", "sudo rm", "dd if=", "> /dev/"]
 
-# Gate 2: 规则 — 需要用户确认
+# 关卡 2: 规则 — 匹配时需要用户确认
 RULES = [
     {"name": "write_outside", "desc": "写入工作目录之外",
      "check": lambda args: not is_safe_path(args.get("path", ""))},
@@ -56,15 +50,14 @@ RULES = [
 ]
 
 def check_permission(block) -> bool:
-    # Gate 1: 硬拒绝
+    # 关卡 1: 硬拒绝 — 命中即拒绝，没有例外
     for keyword in DENY_LIST:
         if keyword in str(block.input):
             return False
 
-    # Gate 2: 规则匹配
+    # 关卡 2: 规则匹配 + 用户确认 — 匹配规则时弹出提示
     for rule in RULES:
         if rule["check"](block.input):
-            # Gate 3: 用户确认
             answer = input(f"⚠️ {rule['desc']}。允许? [y/N] ")
             if answer.lower() != "y":
                 return False
@@ -72,7 +65,7 @@ def check_permission(block) -> bool:
     return True</code></pre>
 
 <div class="tip">
-  <strong>前端类比：</strong>Gate 1 像 CSP（内容安全策略），Gate 2 像路由守卫，Gate 3 像 <code>window.confirm()</code>。
+  <strong>前端类比：</strong>关卡 1 像 CSP（内容安全策略）——绝对拦截。关卡 2 像路由守卫 + <code>window.confirm()</code> ——匹配条件时弹出确认，用户可以选择放行或拒绝。
 </div>
 
 <h2>Python 语法速查</h2>
@@ -100,15 +93,15 @@ def check_permission(block) -> bool:
 <script>
 Quiz.render('quiz-container', [
   {
-    question: '三道门的设计中，哪一道是"绝对不能通过"的？',
+    question: '两道关卡中，哪一道是"绝对不能通过"的？',
     options: [
-      'Gate 1: 硬拒绝',
-      'Gate 2: 规则匹配',
-      'Gate 3: 用户确认',
-      '三道门都可以被绕过',
+      '关卡 1: 硬拒绝',
+      '关卡 2: 规则匹配 + 用户确认',
+      '两道关卡都可以被绕过',
+      '取决于用户配置',
     ],
     answer: 0,
-    explanation: '✅ 正确！Gate 1 是黑名单，命中即拒绝，没有用户确认的机会。Gate 2 和 3 有"例外"（用户可以放行），Gate 1 没有。',
+    explanation: '✅ 正确！关卡 1 是黑名单，命中即拒绝，没有用户确认的机会。关卡 2 有"例外"——用户可以选择放行。',
   },
 ]);
 </script>

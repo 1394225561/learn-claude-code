@@ -93,6 +93,18 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！daemon=True 意味着主进程退出时，这些线程会被自动杀死，不会让程序挂起。对于后台任务来说，这正是我们想要的。',
   },
+  {
+    question: 'background_lock 的作用是什么？',
+    options: [
+      '限制后台任务的执行速度',
+      '保护共享数据，防止多个线程同时修改导致数据竞争',
+      '确保后台任务按顺序执行',
+      '防止主进程和后台线程通信',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！多个线程同时读写 background_results 会导致数据竞争。Lock 确保同一时刻只有一个线程能修改共享数据。',
+  },
+  },
 ]);
 </script>
 

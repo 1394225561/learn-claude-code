@@ -43,8 +43,12 @@ def run_todo_write(todos: list) -> str:
 # 在 agent_loop 中
 if response.stop_reason == "tool_use":
     rounds_since_todo += 1
+    # 如果这一轮调用了 todo_write，重置计数器
+    for block in response.content:
+        if block.type == "tool_use" and block.name == "todo_write":
+            rounds_since_todo = 0
+    # 3 轮没更新，注入提醒
     if rounds_since_todo >= 3:
-        # 注入提醒
         messages.append({"role": "user", "content": "⚠️ 请更新你的任务进度。"})
         rounds_since_todo = 0</code></pre>
 

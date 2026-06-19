@@ -40,10 +40,32 @@ type: user
 - 语言：Python，不用 TypeScript
 - 测试框架：pytest</code></pre>
 
+<h2>基础工具函数</h2>
+
+<pre><code>MEMORY_DIR = Path(".memory")
+
+def write_memory_file(fact: dict) -> str:
+    """将一条记忆写入 .memory/ 目录"""
+    name = fact["name"]
+    path = MEMORY_DIR / f"{name}.md"
+    content = f"---\nname: {name}\ndescription: {fact['description']}\ntype: {fact.get('type', 'user')}\n---\n\n{fact['content']}"
+    path.write_text(content)
+    return name
+
+def load_all_memories() -> list[dict]:
+    """扫描 .memory/ 目录，返回所有记忆的元数据"""
+    memories = []
+    for f in MEMORY_DIR.glob("*.md"):
+        if f.name == "MEMORY.md": continue
+        frontmatter, _ = _parse_frontmatter(f.read_text())
+        memories.append({**frontmatter, "filename": f.name})
+    return memories</code></pre>
+
 <h2>Selection：对话前注入相关记忆</h2>
 
 <pre><code>def select_relevant_memories(messages):
     """用 LLM 从记忆目录中挑选相关的"""
+    all_memories = load_all_memories()
     catalog = "\n".join(f"- {m['name']}: {m['description']}" for m in all_memories)
     recent = messages[-4:]  # 最近 2 轮对话
 
@@ -51,7 +73,9 @@ type: user
         model=SMALL_MODEL,
         messages=[{"role": "user", "content": f"对话:\n{recent}\n\n记忆目录:\n{catalog}\n\n选出相关的记忆文件名（JSON 数组）"}],
     )
-    return parse_filenames(response)</code></pre>
+    # 解析 LLM 返回的文件名列表
+    filenames = json.loads(response.content[0].text)
+    return [f for f in filenames if (MEMORY_DIR / f).exists()]</code></pre>
 
 <h2>Extraction：每轮结束后提取新记忆</h2>
 
@@ -61,7 +85,8 @@ type: user
         model=SMALL_MODEL,
         messages=[{"role": "user", "content": f"从这段对话中提取用户偏好或项目事实:\n{messages[-2:]}"}],
     )
-    new_facts = parse_json(response)
+    # LLM 返回 JSON 数组，每个元素包含 name, description, content
+    new_facts = json.loads(response.content[0].text)
     for fact in new_facts:
         write_memory_file(fact)  # 写入 .memory/</code></pre>
 
@@ -104,6 +129,17 @@ Quiz.render('quiz-container', [
     ],
     answer: 1,
     explanation: '✅ 正确！如果用户说"我喜欢简洁风格"，关键词匹配找不到"代码风格：简洁"。但 LLM 能理解这两句话在说同一件事。代码里也有关键词匹配作为 fallback。',
+  },
+  {
+    question: '记忆文件为什么用 YAML frontmatter 格式？',
+    options: [
+      '为了让文件更大',
+      '结构化元数据便于程序解析，正文内容保留可读性',
+      '因为 Python 只能读 YAML',
+      '这是 Markdown 的标准格式',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！frontmatter 存储机器可读的元数据（name, description, type），正文保留人类可读的内容。两全其美。',
   },
 ]);
 </script>

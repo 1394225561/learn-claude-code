@@ -100,6 +100,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！Python 出于安全考虑会随机化 hash seed，所以同样的字典在不同运行中 hash 值不同。json.dumps(sort_keys=True) 是确定性的。',
   },
+  {
+    question: 'assemble_system_prompt 为什么要按运行时状态动态组装？',
+    options: [
+      '为了代码更优雅',
+      '避免注入空段落浪费 token，只包含当前需要的信息',
+      '因为 API 要求每次调用都用不同的 prompt',
+      '为了加快 API 响应速度',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！没有记忆时就不注入记忆段落，没连 MCP 时就不注入 MCP 描述。动态组装让 prompt 精简高效。',
+  },
 ]);
 </script>
 

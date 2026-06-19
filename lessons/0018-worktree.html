@@ -104,6 +104,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！worktree 共享 .git 目录（对象数据库），所以不需要克隆多个仓库。每个 worktree 有自己的分支和工作目录，但历史是共享的。',
   },
+  {
+    question: '删除 worktree 前为什么要检查未提交的更改？',
+    options: [
+      '为了节省磁盘空间',
+      '防止误删正在进行中的工作',
+      'git 要求必须这样做',
+      '为了提高删除速度',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！就像 docker rm 拒绝删除运行中的容器，remove_worktree 在 force=False 时会检查 git status，有未提交更改就拒绝删除。',
+  },
 ]);
 </script>
 

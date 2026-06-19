@@ -37,7 +37,20 @@
 
 <h2>代码实现</h2>
 
-<pre><code>SKILL_REGISTRY: dict[str, dict] = {}
+<pre><code>from pathlib import Path
+import yaml
+
+SKILLS_DIR = Path("skills")
+SKILL_REGISTRY: dict[str, dict] = {}
+
+def _parse_frontmatter(text: str) -> tuple[dict, str]:
+    """解析 YAML frontmatter（Markdown 文件顶部 --- 包裹的部分）"""
+    if not text.startswith("---"):
+        return {}, text
+    parts = text.split("---", 2)
+    frontmatter = yaml.safe_load(parts[1]) or {}
+    body = parts[2].strip() if len(parts) > 2 else ""
+    return frontmatter, body
 
 def _scan_skills():
     """启动时扫描 skills/ 目录，只读名字和描述"""
@@ -104,6 +117,17 @@ Quiz.render('quiz-container', [
     ],
     answer: 1,
     explanation: '✅ 正确！Token 是稀缺资源。如果只用了 3 个技能却注入了 20 个的完整内容，浪费了 17 个技能的 token 空间。目录 + 按需加载是最优解。',
+  },
+  {
+    question: 'SKILL.md 的 YAML frontmatter 有什么作用？',
+    options: [
+      '定义技能的执行逻辑',
+      '存储元数据（名字、描述），用于目录注入',
+      '配置 API 密钥',
+      '定义技能的权限',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！frontmatter 存储轻量元数据，在启动时扫描注入系统提示词。完整内容只在 load_skill 时才返回。',
   },
 ]);
 </script>

@@ -116,6 +116,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！短路求值——一旦有回调返回了有意义的值（非 None），就不再调用后续回调。和 JS 的 && 或 ?. 链式调用是一个思路。',
   },
+  {
+    question: 'Stop hook 返回一个字符串会怎样？',
+    options: [
+      '循环正常退出',
+      '字符串作为错误消息抛出',
+      '字符串注入为用户消息，循环继续',
+      '字符串被忽略',
+    ],
+    answer: 2,
+    explanation: '✅ 正确！Stop hook 的返回值会被注入为新的 user message，循环继续。这让你可以在模型想停的时候强制它继续工作。',
+  },
 ]);
 </script>
 

@@ -106,6 +106,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！can_start 遍历所有 blockedBy 任务，只要有一个不是 completed 状态就返回 False。这是"全部前置完成"的语义。',
   },
+  {
+    question: '为什么用 JSON 文件而不是数据库来存储任务？',
+    options: [
+      'JSON 更快',
+      '扁平文件可持久化、可跨进程、可人工检查，无需额外依赖',
+      'Python 不支持数据库',
+      'JSON 更安全',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！每个任务一个 JSON 文件，进程崩溃后数据还在，出了问题可以直接打开文件排查。这就是"文件即数据库"的设计原则。',
+  },
 ]);
 </script>
 

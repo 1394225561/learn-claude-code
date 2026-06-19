@@ -101,6 +101,17 @@ Quiz.render('quiz-container', [
     answer: 1,
     explanation: '✅ 正确！先用零成本的文本操作（存盘、裁剪、替换），解决不了才用昂贵的 LLM 摘要。这是"渐进式升级"策略。',
   },
+  {
+    question: 'messages[:] = new_messages 和 messages = new_messages 有什么区别？',
+    options: [
+      '没有区别',
+      '前者原地修改，后者创建新变量',
+      '前者更快',
+      '后者会丢失引用',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！切片赋值 [:] 原地修改列表内容，所有持有该列表引用的地方都能看到变化。直接赋值 = 创建新对象，旧引用不变。',
+  },
 ]);
 </script>
 
