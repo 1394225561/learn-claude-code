@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 14 课: Cron — 定时任务</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 14 课: Cron — 定时任务</h1>
+
+<p class="info">让 Agent 能够<strong>定时执行任务</strong>——每天早上跑一次测试、每小时检查一次构建状态。</p>
+
+<h2>核心思路</h2>
+
+<p>四层架构：</p>
+
+<ol>
+  <li><strong>调度器</strong>（daemon 线程）：每秒轮询一次，检查 cron 表达式是否匹配</li>
+  <li><strong>队列</strong>：匹配的任务放入线程安全队列</li>
+  <li><strong>队列处理器</strong>：Agent 空闲时，把队列中的任务注入为消息</li>
+  <li><strong>Agent Loop</strong>：消费消息，正常执行</li>
+</ol>
+
+<div class="diagram">
+<pre>
+  ┌──────────────┐     ┌────────┐     ┌──────────────┐     ┌───────────┐
+  │ Cron 调度器   │ ──> │  队列   │ ──> │ 队列处理器    │ ──> │ Agent Loop│
+  │ (每秒轮询)    │     │        │     │ (空闲时注入)  │     │ (执行)    │
+  └──────────────┘     └────────┘     └──────────────┘     └───────────┘
+</pre>
+</div>
+
+<h2>Cron 表达式</h2>
+
+<pre><code>@dataclass
+class CronJob:
+    id: str
+    cron: str        # "0 9 * * *" = 每天早上 9 点
+    prompt: str       # 要执行的任务描述
+    recurring: bool   # 是否重复
+    durable: bool     # 是否持久化到磁盘</code></pre>
+
+<p>5 字段 cron 格式：<code>分 时 日 月 周</code></p>
+
+<table>
+  <tr><th>表达式</th><th>含义</th></tr>
+  <tr><td><code>0 9 * * *</code></td><td>每天 09:00</td></tr>
+  <tr><td><code>*/5 * * * *</code></td><td>每 5 分钟</td></tr>
+  <tr><td><code>0 0 * * 1</code></td><td>每周一 00:00</td></tr>
+</table>
+
+<h2>线程协作</h2>
+
+<p>调度器和 Agent Loop 运行在不同线程，通过 <code>agent_lock</code> 协调：</p>
+
+<pre><code># 调度器：只有 Agent 空闲时才注入任务
+if agent_lock.acquire(blocking=False):  # 非阻塞获取锁
+    cron_queue.append(job)
+    agent_lock.release()
+
+# Agent Loop：每轮开始前消费队列
+def consume_cron_queue():
+    while cron_queue:
+        job = cron_queue.pop(0)
+        messages.append({"role": "user", "content": f"[Scheduled] {job.prompt}"})</code></pre>
+
+<h2>前端类比</h2>
+
+<p>这就是 <code>setInterval</code> + 消息队列。调度器像 Service Worker 的 periodicSync，队列处理器像 Redux middleware。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>单个 Agent 已经很强大了。但复杂任务需要<strong>多个 Agent 协作</strong>。<strong>下一课：<a href="0015-agent-teams.html">第 15 课 — Agent Teams（Agent 团队）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '为什么 cron 队列处理器需要 agent_lock？',
+    options: [
+      '防止多个 cron 任务同时执行',
+      '确保只在 Agent 空闲时注入任务，避免打断正在处理的对话',
+      '防止文件写入冲突',
+      '限制 CPU 使用率',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！如果 Agent 正在处理用户对话，突然注入一个 cron 任务会打乱上下文。lock 确保只在空闲时注入。',
+  },
+]);
+</script>
+
+</body>
+</html>

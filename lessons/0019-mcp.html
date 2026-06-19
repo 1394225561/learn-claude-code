@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 19 课: MCP — 模型上下文协议</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 19 课: MCP — 模型上下文协议</h1>
+
+<p class="info">Agent 只能用内置工具？这一课通过 <strong>MCP（Model Context Protocol）</strong>让外部工具插件化接入。</p>
+
+<h2>什么是 MCP？</h2>
+
+<p>MCP 是 Anthropic 定义的一个标准协议，让 AI Agent 能够发现和调用外部服务器提供的工具。就像 USB——你不需要知道鼠标、键盘、U 盘的内部实现，只要它们遵守 USB 协议就能即插即用。</p>
+
+<h2>核心思路</h2>
+
+<pre><code># 工具命名规范：mcp__{服务器名}__{工具名}
+mcp__github__create_pr
+mcp__slack__send_message
+mcp__database__query</code></pre>
+
+<h2>代码实现</h2>
+
+<pre><code>class MCPClient:
+    def __init__(self, name, config):
+        self.name = name
+        self.tools = []     # 从服务器发现的工具列表
+        self.config = config
+
+    def discover_tools(self):
+        """连接服务器，获取工具列表"""
+        # 通过 MCP 协议与服务器通信
+        ...
+
+    def call_tool(self, tool_name, args):
+        """调用远程工具"""
+        ...
+
+# 合并工具池
+def assemble_tool_pool():
+    tools = list(BUILTIN_TOOLS)
+    handlers = dict(BUILTIN_HANDLERS)
+
+    for server_name, client in mcp_clients.items():
+        for tool_def in client.tools:
+            # 规范化命名
+            prefixed = f"mcp__{normalize(server_name)}__{normalize(tool_def['name'])}"
+            tools.append({"name": prefixed, ...})
+            # 用 lambda 捕获当前值（避免闭包陷阱）
+            handlers[prefixed] = lambda *, c=client, t=tool_def["name"], **kw: c.call_tool(t, kw)
+
+    return tools, handlers</code></pre>
+
+<div class="warn">
+  <strong>闭包陷阱：</strong>在 for 循环中创建 lambda 时，如果不使用默认参数捕获（<code>c=client</code>），所有 lambda 会共享同一个变量，最终都指向最后一个 client。
+</div>
+
+<h2>前端类比</h2>
+
+<p>这就是 VS Code 的扩展系统或浏览器扩展架构。宿主（Agent）定义插件 API，外部服务（MCP 服务器）注册能力，宿主动态添加到命令面板。<code>mcp__server__tool</code> 命名就像 VS Code 扩展命令 ID（<code>extension.commandName</code>）。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>🎉 <strong>你已经学完了所有 19 个机制！</strong><strong>最后一课：<a href="0020-comprehensive.html">第 20 课 — Comprehensive（综合 Agent）</a></strong>，把它们全部组装起来。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: 'MCP 工具命名为什么用 mcp__server__tool 格式？',
+    options: [
+      '为了好看',
+      '为了避免与内置工具名冲突，并清晰标识工具来源',
+      'MCP 协议强制要求',
+      '为了提高查找速度',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！命名空间隔离防止冲突（两个服务器可能都有 "search" 工具），同时一眼就能看出工具来自哪个服务器。',
+  },
+]);
+</script>
+
+</body>
+</html>

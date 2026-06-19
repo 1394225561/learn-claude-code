@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 5 课: TodoWrite — 任务规划</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 5 课: TodoWrite — 任务规划</h1>
+
+<p class="info">复杂任务需要规划。这一课给 Agent 一个<strong>任务板</strong>，让它先列计划再执行。</p>
+
+<h2>问题：Agent 闷头就干</h2>
+
+<p>你说"重构这个项目"，Agent 直接开始改代码。改到一半发现方向错了，又回头重来。</p>
+
+<p>更好的方式：先列计划，再逐步执行，随时追踪进度。</p>
+
+<h2>任务板</h2>
+
+<pre><code>CURRENT_TODOS: list[dict] = []  # 全局任务列表
+
+def run_todo_write(todos: list) -> str:
+    """更新任务板"""
+    global CURRENT_TODOS
+    CURRENT_TODOS = todos
+
+    # 打印进度
+    for todo in todos:
+        icon = {"pending": "⬜", "in_progress": "🔵", "completed": "✅"}
+        print(f"  {icon.get(todo['status'], '❓')} {todo['content']}")
+
+    return f"Updated {len(todos)} todos"</code></pre>
+
+<h2>定时提醒</h2>
+
+<p>如果 Agent 3 轮没有更新任务板，自动注入提醒：</p>
+
+<pre><code>rounds_since_todo = 0
+
+# 在 agent_loop 中
+if response.stop_reason == "tool_use":
+    rounds_since_todo += 1
+    if rounds_since_todo >= 3:
+        # 注入提醒
+        messages.append({"role": "user", "content": "⚠️ 请更新你的任务进度。"})
+        rounds_since_todo = 0</code></pre>
+
+<div class="tip">
+  <strong>关键洞察：</strong>TodoWrite 是<strong>规划能力</strong>，不是执行能力。它帮 Agent 组织思路，不做任何实际工作。就像一个白板——你在上面写计划，白板不会帮你干活，但能让你不迷路。
+</div>
+
+<h2>前端类比</h2>
+
+<p>这就是 <code>useReducer</code> 管理的看板状态 + 空闲超时提醒（"别忘了保存"的 toast）。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>有了计划，但复杂任务的上下文会爆炸。<strong>下一课：<a href="0006-subagent.html">第 6 课 — Subagent（子 Agent）</a></strong>，让 Agent 派出"分身"。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: 'TodoWrite 工具的核心价值是什么？',
+    options: [
+      '让 Agent 执行任务更快',
+      '帮 Agent 组织思路、追踪进度',
+      '让 Agent 可以并行执行多个任务',
+      '减少 token 消耗',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！TodoWrite 是规划能力，不是执行能力。它让 Agent 先想清楚再动手，避免"改到一半发现方向错了"的情况。',
+  },
+]);
+</script>
+
+</body>
+</html>

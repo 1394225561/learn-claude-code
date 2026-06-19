@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 4 课: Hook System — 钩子系统</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 4 课: Hook System — 钩子系统</h1>
+
+<p class="info">权限、日志、输出检查……都写死在循环里？这一课用<strong>事件驱动</strong>把扩展逻辑从循环中解耦。</p>
+
+<h2>问题：循环里塞满了检查逻辑</h2>
+
+<p>上一课的权限检查直接写在循环里。如果再加日志、加输出截断、加自定义检查，循环会变成几百行的意大利面条。</p>
+
+<h2>四个生命周期事件</h2>
+
+<table>
+  <tr><th>事件</th><th>触发时机</th><th>典型用途</th></tr>
+  <tr><td><code>UserPromptSubmit</code></td><td>用户输入后</td><td>输入过滤、注入上下文</td></tr>
+  <tr><td><code>PreToolUse</code></td><td>工具执行前</td><td>权限检查、参数验证</td></tr>
+  <tr><td><code>PostToolUse</code></td><td>工具执行后</td><td>日志、输出截断</td></tr>
+  <tr><td><code>Stop</code></td><td>循环即将退出时</td><td>强制继续、最终检查</td></tr>
+</table>
+
+<h2>代码实现</h2>
+
+<pre><code># 注册表：事件名 → 回调列表
+HOOKS = {
+    "UserPromptSubmit": [],
+    "PreToolUse": [],
+    "PostToolUse": [],
+    "Stop": [],
+}
+
+def register_hook(event: str, callback):
+    HOOKS[event].append(callback)
+
+def trigger_hooks(event: str, *args):
+    """触发事件，返回第一个非 None 的值（短路）"""
+    for callback in HOOKS[event]:
+        result = callback(*args)
+        if result is not None:
+            return result  # 短路：有回调返回值就停止
+    return None</code></pre>
+
+<p>循环变成这样：</p>
+
+<pre><code>while True:
+    # ... 调用 LLM ...
+
+    for block in response.content:
+        if block.type == "tool_use":
+            # PreToolUse: 权限检查可以在这里返回 "denied"
+            blocked = trigger_hooks("PreToolUse", block)
+            if blocked:
+                results.append({"type": "tool_result", "content": blocked})
+                continue
+
+            output = TOOL_HANDLERS[block.name](**block.input)
+
+            # PostToolUse: 日志、输出处理
+            trigger_hooks("PostToolUse", block, output)
+            results.append(...)
+
+    # Stop: 可以返回字符串来强制继续循环
+    stop = trigger_hooks("Stop", messages)
+    if stop:
+        messages.append({"role": "user", "content": stop})
+        continue
+    return</code></pre>
+
+<div class="tip">
+  <strong>Hook 的返回值决定行为：</strong>返回 <code>None</code> = 继续正常流程。返回字符串 = 短路（PreToolUse 阻止执行，Stop 强制继续）。
+</div>
+
+<h2>前端类比</h2>
+
+<p>这就是 <code>EventEmitter</code>、Vue Router 的导航守卫、Express 的中间件链。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>Hook 系统让 Agent 可以灵活扩展。现在让它学会<strong>规划任务</strong>。<strong>下一课：<a href="0005-todo.html">第 5 课 — TodoWrite（任务规划）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: 'trigger_hooks 返回第一个非 None 值就停止，这叫什么？',
+    options: [
+      '冒泡',
+      '短路求值',
+      '递归',
+      '异步回调',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！短路求值——一旦有回调返回了有意义的值（非 None），就不再调用后续回调。和 JS 的 && 或 ?. 链式调用是一个思路。',
+  },
+]);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 13 课: Background Task — 后台任务</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 13 课: Background Task — 后台任务</h1>
+
+<p class="info"><code>npm install</code> 要跑 30 秒，Agent 干等着？这一课让慢任务<strong>在后台运行</strong>，Agent 继续干别的。</p>
+
+<h2>问题：慢操作阻塞循环</h2>
+
+<p><code>pip install</code>、<code>npm install</code>、<code>docker build</code> 这些操作可能要几十秒。如果 Agent Loop 等着它完成，整个对话就卡住了。</p>
+
+<h2>核心思路：Daemon 线程</h2>
+
+<pre><code>import threading
+
+background_tasks = {}
+background_results = {}
+background_lock = threading.Lock()
+_bg_counter = 0
+
+def start_background_task(block) -> str:
+    global _bg_counter
+    _bg_counter += 1
+    bg_id = f"bg_{_bg_counter:04d}"
+
+    def worker():
+        result = execute_tool(block)  # 在新线程中执行
+        with background_lock:
+            background_tasks[bg_id]["status"] = "completed"
+            background_results[bg_id] = result
+
+    threading.Thread(target=worker, daemon=True).start()
+    return bg_id  # 立即返回 ID，不等结果</code></pre>
+
+<h2>收集结果</h2>
+
+<pre><code>def collect_background_results():
+    """每轮循环开始时，检查有没有完成的后台任务"""
+    results = []
+    with background_lock:
+        for bg_id, result in list(background_results.items()):
+            results.append(f"[{bg_id} completed]\n{result}")
+            del background_results[bg_id]
+    return results</code></pre>
+
+<p>Agent 每轮循环开始时检查一次，把完成的结果注入消息列表。</p>
+
+<h2>前端类比</h2>
+
+<p>这就是 <code>setTimeout</code>/<code>Promise</code> + 通知队列。启动异步操作，立即返回 ID，完成后通过回调注入结果。像 toast 通知一样："后台任务完成了！"</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>后台任务解决了"等待"问题。但如果需要<strong>定时执行</strong>呢？<strong>下一课：<a href="0014-cron.html">第 14 课 — Cron（定时任务）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '为什么后台任务用 daemon 线程？',
+    options: [
+      'daemon 线程执行更快',
+      'daemon 线程在主进程退出时自动终止，不会阻止程序关闭',
+      '普通线程不能执行 bash 命令',
+      'daemon 线程不需要锁',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！daemon=True 意味着主进程退出时，这些线程会被自动杀死，不会让程序挂起。对于后台任务来说，这正是我们想要的。',
+  },
+]);
+</script>
+
+</body>
+</html>

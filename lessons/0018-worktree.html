@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 18 课: Worktree — 工作树隔离</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 18 课: Worktree — 工作树隔离</h1>
+
+<p class="info">多个 Agent 并行修改同一个仓库会冲突。这一课用 <strong>git worktree</strong> 让每个任务拥有独立的文件系统。</p>
+
+<h2>问题：并行写同一个仓库会冲突</h2>
+
+<p>Agent A 在改 <code>app.py</code>，Agent B 也在改 <code>app.py</code>。谁的修改会被覆盖？</p>
+
+<h2>核心思路：Git Worktree</h2>
+
+<p>Git worktree 让你从同一个仓库创建多个"工作树"——每个都有自己的目录和分支，但共享 git 历史。</p>
+
+<div class="diagram">
+<pre>
+  .worktrees/
+  ├── feature-login/    ← Agent A 的工作树 (分支: wt/feature-login)
+  │   └── app.py        (Agent A 的版本)
+  ├── fix-bug-123/      ← Agent B 的工作树 (分支: wt/fix-bug-123)
+  │   └── app.py        (Agent B 的版本)
+  └── main/             ← 主仓库 (你们共享的 git 历史)
+</pre>
+</div>
+
+<h2>代码实现</h2>
+
+<pre><code>def create_worktree(name, task_id=""):
+    # 1. 验证名称（只允许字母数字和 ._-）
+    validate_worktree_name(name)
+
+    # 2. 创建 worktree + 新分支
+    path = WORKTREE_DIR / name
+    ok, result = run_git(["worktree", "add", str(path), "-b", f"wt/{name}", "HEAD"])
+
+    # 3. 绑定到任务
+    if task_id:
+        bind_task_to_worktree(task_id, name)
+
+    log_event("create", name, task_id)
+    return ok, result</code></pre>
+
+<h2>安全清理</h2>
+
+<p>删除 worktree 前检查是否有未提交的更改：</p>
+
+<pre><code>def remove_worktree(name, force=False):
+    if not force:
+        # 检查是否有未提交的更改
+        ok, output = run_git(["-C", str(path), "status", "--porcelain"])
+        if output.strip():
+            return False, "Has uncommitted changes. Use force=True to override."
+
+    # 安全删除
+    run_git(["worktree", "remove", str(path)])
+    return True, "Removed"</code></pre>
+
+<h2>前端类比</h2>
+
+<p>Worktree 就像 Docker 容器——每个任务有自己的隔离文件系统，绑定到 CI/CD job。安全检查就像 <code>docker rm</code> 拒绝删除运行中的容器。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>Agent 的能力已经很完整了。但它只能用内置工具。<strong>下一课：<a href="0019-mcp.html">第 19 课 — MCP（模型上下文协议）</a></strong>，让外部工具插件化接入。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: 'Git worktree 的核心优势是什么？',
+    options: [
+      '节省磁盘空间',
+      '让多个工作目录共享同一个 git 历史，避免仓库克隆',
+      '加快 git 操作速度',
+      '自动解决合并冲突',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！worktree 共享 .git 目录（对象数据库），所以不需要克隆多个仓库。每个 worktree 有自己的分支和工作目录，但历史是共享的。',
+  },
+]);
+</script>
+
+</body>
+</html>

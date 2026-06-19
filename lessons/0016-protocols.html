@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 16 课: Team Protocols — 团队协议</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 16 课: Team Protocols — 团队协议</h1>
+
+<p class="info">上一课的团队通信是松散的文本消息。这一课用<strong>结构化协议</strong>实现可靠的请求-响应匹配。</p>
+
+<h2>问题：松散消息不可靠</h2>
+
+<p>Lead 发送"请关闭"，Teammate 回复"好的"。但如果 Teammate 回复的是"我正在做别的事情"呢？文本消息没有类型验证，容易误判。</p>
+
+<h2>协议状态机</h2>
+
+<pre><code>@dataclass
+class ProtocolState:
+    request_id: str       # 唯一标识
+    type: str             # "shutdown" | "plan_approval"
+    status: str           # pending → approved / rejected
+    payload: str
+    created_at: float = field(default_factory=time.time)</code></pre>
+
+<div class="diagram">
+<pre>
+  shutdown 请求:
+  Lead ──[shutdown_request]──> Teammate
+  Lead <──[shutdown_response]── Teammate
+
+  plan_approval 请求:
+  Teammate ──[plan_submit]──> Lead
+  Teammate <──[plan_approval]── Lead
+</pre>
+</div>
+
+<h2>请求-响应匹配</h2>
+
+<pre><code>pending_requests: dict[str, ProtocolState] = {}
+
+def match_response(response_type, request_id, approve):
+    """验证响应类型是否匹配请求"""
+    state = pending_requests.get(request_id)
+    if not state:
+        return
+
+    # 类型验证：shutdown 请求只能用 shutdown_response 回复
+    if state.type == "shutdown" and response_type != "shutdown_response":
+        return  # 类型不匹配，忽略
+
+    state.status = "approved" if approve else "rejected"</code></pre>
+
+<h2>前端类比</h2>
+
+<p>这就是 WebSocket/gRPC 的请求-响应关联模式。每个请求有唯一 ID，响应处理器匹配回来。状态机（pending → approved/rejected）和 Redux saga 或 XState 一模一样。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>协议让团队协调有了结构。但 Teammate 还是被动等任务。<strong>下一课：<a href="0017-autonomous.html">第 17 课 — Autonomous Agent（自治 Agent）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '为什么需要请求-响应的类型验证？',
+    options: [
+      '为了提高性能',
+      '防止消息类型混乱，确保 shutdown_response 只能回复 shutdown_request',
+      '为了减少网络流量',
+      'Python 的类型系统要求这样做',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！没有类型验证的话，一个 "好的" 消息可能被误判为任何请求的响应。类型验证确保每个响应只能匹配对应类型的请求。',
+  },
+]);
+</script>
+
+</body>
+</html>

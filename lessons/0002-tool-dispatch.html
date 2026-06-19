@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 2 课: Tool Dispatch — 工具调度</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 2 课: Tool Dispatch — 工具调度</h1>
+
+<p class="info">上一课只有一个 bash 工具。这一课我们给 Agent <strong>5 个真正的工具</strong>，并用一个调度表让扩展工具变得零成本。</p>
+
+<h2>问题：只有 bash 太原始了</h2>
+
+<p>用 bash 读文件要 <code>cat</code>，写文件要 <code>echo ... &gt;</code>，编辑文件要用 <code>sed</code>。又丑又容易出错。</p>
+
+<p>能不能给模型更精确的工具？比如 <code>read_file</code>、<code>write_file</code>、<code>edit_file</code>？可以。但如果每加一个工具就改循环代码，那就太蠢了。</p>
+
+<h2>核心思路：调度表</h2>
+
+<p>把"工具名 → 执行函数"的映射抽成一个字典（类似 JS 的对象），循环代码永远不变：</p>
+
+<pre><code># 工具调度表 — 类似前端的路由表
+TOOL_HANDLERS = {
+    "bash":       run_bash,
+    "read_file":  run_read,
+    "write_file": run_write,
+    "edit_file":  run_edit,
+    "glob":       run_glob,
+}
+
+# 循环中只需要一行
+output = TOOL_HANDLERS[block.name](**block.input)</code></pre>
+
+<div class="tip">
+  <strong>前端类比：</strong>这就像 React 的 <code>&lt;Icon name="..." /&gt;</code> 组件——渲染管线不变，你只需要在注册表里加一行。
+</div>
+
+<h2>工具定义：告诉模型有什么</h2>
+
+<p>除了执行函数，还需要用 JSON Schema 告诉模型每个工具的用途和参数：</p>
+
+<pre><code>TOOLS = [
+    {
+        "name": "bash",
+        "description": "Run a shell command.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "command": {"type": "string"}
+            },
+            "required": ["command"],
+        },
+    },
+    {
+        "name": "read_file",
+        "description": "Read a file's content.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string"}
+            },
+            "required": ["path"],
+        },
+    },
+    # ... 更多工具
+]</code></pre>
+
+<p>模型看到这些定义后，就知道什么时候该调哪个工具。</p>
+
+<h2>循环的变化</h2>
+
+<p>对比上一课，循环的唯一变化是把 <code>run_bash(block.input["command"])</code> 换成了：</p>
+
+<pre><code>for block in response.content:
+    if block.type == "tool_use":
+        handler = TOOL_HANDLERS.get(block.name)  # 从调度表查找
+        if handler:
+            output = handler(**block.input)        # ** 展开参数
+        else:
+            output = f"Unknown tool: {block.name}"</code></pre>
+
+<p><code>**block.input</code> 是 Python 的字典展开语法，等价于 JS 的 <code>...block.input</code>，但它是按参数名传入函数的。</p>
+
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>**dict</code></td><td><code>...obj</code></td><td>字典/对象展开，但 Python 是按关键字参数传入</td></tr>
+  <tr><td><code>dict.get(key)</code></td><td><code>obj?.key</code></td><td>安全取值，不存在返回 None 而非报错</td></tr>
+  <tr><td><code>int | None</code></td><td><code>number | null</code></td><td>Python 3.10+ 的联合类型语法</td></tr>
+  <tr><td><code>Path(p) / "sub"</code></td><td><code>path.join(p, "sub")</code></td><td>Path 对象用 <code>/</code> 拼接路径</td></tr>
+</table>
+
+<h2>动手实验</h2>
+
+<p>阅读 <a href="../../s02_tool_use/code.py">s02_tool_use/code.py</a>，思考：</p>
+
+<ol>
+  <li>如果要加一个 <code>delete_file</code> 工具，需要改几处代码？</li>
+  <li><code>safe_path()</code> 函数做了什么？为什么需要它？</li>
+  <li>模型能不能一次调用多个工具？循环是怎么处理的？</li>
+</ol>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>模型有了好用的工具，但它想删文件就删文件、想跑啥就跑啥。<strong>下一课：<a href="0003-permission.html">第 3 课 — Permission（权限系统）</a></strong>，给它加上安全护栏。</p>
+
+<footer>
+  <p>📚 <strong>推荐阅读：</strong><a href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview" target="_blank">Anthropic Tool Use 文档</a></p>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '工具调度表（TOOL_HANDLERS）的核心价值是什么？',
+    options: [
+      '让代码更短',
+      '新增工具时不需要修改 agent loop',
+      '让模型更聪明',
+      '提高执行速度',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！调度表实现了"开闭原则"——对扩展开放（加工具），对修改封闭（循环不变）。',
+  },
+  {
+    question: '**block.input 的作用是什么？',
+    options: [
+      '把字典转成 JSON 字符串',
+      '把字典展开为函数的关键字参数',
+      '创建字典的浅拷贝',
+      '检查字典是否包含所有必需字段',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！** 是 Python 的字典展开操作符，把 {"path": "a.py"} 变成 func(path="a.py")。',
+  },
+]);
+</script>
+
+</body>
+</html>

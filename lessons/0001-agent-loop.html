@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 1 课: Agent Loop — 一个循环就够了</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .hero-diagram {
+      font-size: 0.9rem;
+      letter-spacing: 0.02em;
+    }
+    .code-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .code-compare > div {
+      min-width: 0;
+    }
+    .code-compare h4 {
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    @media (max-width: 600px) {
+      .code-compare { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>第 1 课: Agent Loop — 一个循环就够了</h1>
+
+<p class="info">这是你的第一个 Agent。它只有 <strong>一个循环</strong> 和 <strong>一个工具</strong>，但这已经是一个真正的 Agent 了。</p>
+
+<h2>问题：为什么需要一个循环？</h2>
+
+<p>假设你问 Claude：<em>"帮我看看当前目录有哪些 Python 文件"</em></p>
+
+<p>模型可以输出一条 bash 命令：<code>ls *.py</code>。但输出之后它就停了——它不会自己执行，也不会看到结果后继续推理。</p>
+
+<p>你可以手动执行命令，把输出粘贴回去，让模型继续。但每一步你都在做"中间人"。</p>
+
+<p><strong>Agent Loop 就是把这个"中间人"自动化。</strong></p>
+
+<h2>核心思路</h2>
+
+<div class="diagram hero-diagram">
+<pre>
+  +----------+      +-------+      +---------+
+  |   用户   | ---> |  LLM  | ---> |  工具   |
+  |  输入    |      |       |      |  执行   |
+  +----------+      +---+---+      +----+----+
+                        ^               |
+                        |   tool_result |
+                        +---------------+
+                        (循环继续)
+</pre>
+</div>
+
+<p>逻辑极其简单：</p>
+
+<table>
+  <tr><th>信号</th><th>含义</th><th>循环动作</th></tr>
+  <tr>
+    <td><code>stop_reason == "tool_use"</code></td>
+    <td>模型说："我要用工具"</td>
+    <td>执行工具 → 结果喂回去 → 继续循环</td>
+  </tr>
+  <tr>
+    <td><code>stop_reason != "tool_use"</code></td>
+    <td>模型说："我做完了"</td>
+    <td>退出循环</td>
+  </tr>
+</table>
+
+<h2>代码解析</h2>
+
+<p>让我们一步步看这个循环是怎么工作的。首先，用户输入一条消息：</p>
+
+<pre><code>messages = [{"role": "user", "content": "帮我看看当前目录有哪些文件"}]</code></pre>
+
+<p>然后进入循环，把消息和工具定义一起发给 LLM：</p>
+
+<pre><code>response = client.messages.create(
+    model=MODEL,
+    system=SYSTEM,       # 系统提示词，告诉模型它的角色
+    messages=messages,    # 对话历史
+    tools=TOOLS,          # 可用工具列表
+    max_tokens=8000,
+)</code></pre>
+
+<p>把模型的回答追加到对话历史中：</p>
+
+<pre><code>messages.append({"role": "assistant", "content": response.content})</code></pre>
+
+<p>检查模型是否要调用工具。如果不调用，循环结束：</p>
+
+<pre><code>if response.stop_reason != "tool_use":
+    return  # 模型说完了，退出</code></pre>
+
+<p>如果模型要调用工具，执行它并收集结果：</p>
+
+<pre><code>results = []
+for block in response.content:
+    if block.type == "tool_use":
+        output = run_bash(block.input["command"])  # 执行 bash 命令
+        results.append({
+            "type": "tool_result",
+            "tool_use_id": block.id,
+            "content": output,
+        })</code></pre>
+
+<p>把工具结果作为新消息，回到循环顶部：</p>
+
+<pre><code>messages.append({"role": "user", "content": results})
+# 回到 while True，继续下一轮</code></pre>
+
+<h2>完整代码</h2>
+
+<p>把上面的步骤组装起来，不到 30 行：</p>
+
+<pre><code>def agent_loop(messages):
+    while True:
+        # 1. 调用 LLM
+        response = client.messages.create(
+            model=MODEL, system=SYSTEM, messages=messages,
+            tools=TOOLS, max_tokens=8000,
+        )
+        # 2. 追加助手回复
+        messages.append({"role": "assistant", "content": response.content})
+
+        # 3. 模型不调工具 → 结束
+        if response.stop_reason != "tool_use":
+            return
+
+        # 4. 执行工具，收集结果
+        results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                output = run_bash(block.input["command"])
+                results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": output,
+                })
+        # 5. 工具结果喂回去，继续循环
+        messages.append({"role": "user", "content": results})</code></pre>
+
+<div class="tip">
+  <strong>关键洞察：</strong>这个循环就是 Agent 的"内核"。后面所有课程（工具系统、权限、记忆、多 Agent）都是在这个循环上叠加机制，循环本身永远不变。
+</div>
+
+<h2>Python 语法速查</h2>
+
+<p>如果你熟悉 JavaScript，这些 Python 语法可能需要留意：</p>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>while True:</code></td><td><code>while (true) {</code></td><td>Python 用缩进代替花括号</td></tr>
+  <tr><td><code>def func(x):</code></td><td><code>function func(x) {</code></td><td>函数定义用 <code>def</code> 关键字</td></tr>
+  <tr><td><code>for item in list:</code></td><td><code>for (const item of list) {</code></td><td>Python 的 for-in 遍历</td></tr>
+  <tr><td><code>if x != y:</code></td><td><code>if (x !== y) {</code></td><td>Python 用 <code>!=</code> 而非 <code>!==</code></td></tr>
+  <tr><td><code>[x for x in list]</code></td><td><code>list.map(x => x)</code></td><td>列表推导式，类似 map</td></tr>
+</table>
+
+<h2>前端类比</h2>
+
+<p>如果你有前端经验，可以这样理解 Agent Loop：</p>
+
+<pre><code>// 前端类比：事件循环
+while (true) {
+  const event = await getNextEvent();   // 等待用户输入或 API 响应
+  if (event.type === 'done') break;     // 退出条件
+
+  const result = await executeHandler(event);  // 执行处理函数
+  emit('result', result);               // 把结果发回去
+}</code></pre>
+
+<p>Agent Loop 本质上就是一个<strong>事件循环</strong>：模型产生"事件"（工具调用），harness 处理事件并返回结果，循环继续。</p>
+
+<h2>动手实验</h2>
+
+<p>阅读 <a href="../../s01_agent_loop/code.py">s01_agent_loop/code.py</a> 的完整代码，然后尝试回答以下问题：</p>
+
+<ol>
+  <li><code>run_bash</code> 函数为什么要做危险命令检查？</li>
+  <li><code>response.stop_reason</code> 有哪些可能的值？</li>
+  <li>为什么工具结果要放在 <code>"role": "user"</code> 的消息里，而不是 <code>"role": "assistant"</code>？</li>
+</ol>
+
+<div class="info">
+  <strong>提示：</strong>这些问题没有标准答案，重要的是思考过程。你可以直接问 Agent（也就是我）来验证你的想法。
+</div>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>现在模型手里只有 bash 一个工具。读文件要用 <code>cat</code>，写文件要用 <code>echo ... &gt;</code>，找文件要用 <code>find</code>——又丑又容易出错。</p>
+
+<p><strong>下一课：</strong><a href="0002-tool-dispatch.html">第 2 课 — Tool Dispatch（工具调度）</a>。给模型真正的工具，看看会发生什么。</p>
+
+<footer>
+  <p>📚 <strong>推荐阅读：</strong><a href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview" target="_blank">Anthropic 官方文档 — Tool Use</a></p>
+  <p>💬 有疑问？随时问我，我是你的 AI 老师。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: 'Agent Loop 的核心逻辑是什么？',
+    options: [
+      '模型生成代码，harness 编译执行',
+      '模型调用工具就继续，不调用就停止',
+      '用户不断输入，模型不断回复',
+      'harness 轮询模型直到得到结果',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！Agent Loop 就是：模型决定要不要调工具（决策权在模型），harness 只负责执行和喂回结果。',
+  },
+  {
+    question: '为什么工具结果要作为 "role": "user" 的消息？',
+    options: [
+      '因为这是用户手动执行的结果',
+      '因为 Anthropic API 的设计约定：tool_result 属于 user 角色的 content',
+      '因为 assistant 角色不能包含结构化数据',
+      '这只是代码风格选择，没有技术原因',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！在 Anthropic 的消息格式中，tool_result 是 user 角色发送给模型的"工具执行结果"，模型看到后会继续推理。',
+  },
+  {
+    question: '这个 Agent Loop 中，谁拥有"决策权"？',
+    options: [
+      'harness（宿主代码）',
+      '用户',
+      'LLM（大语言模型）',
+      '工具函数',
+    ],
+    answer: 2,
+    explanation: '✅ 正确！模型决定调不调工具、调哪个工具。Harness 只是执行者，不参与决策。这就是 "模型决策，harness 执行" 的核心设计原则。',
+  },
+]);
+</script>
+
+</body>
+</html>

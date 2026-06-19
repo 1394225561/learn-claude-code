@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 9 课: Memory — 记忆系统</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 9 课: Memory — 记忆系统</h1>
+
+<p class="info">Agent 每次对话都从零开始。这一课让它<strong>跨会话记住</strong>用户偏好和项目事实。</p>
+
+<h2>三个子系统</h2>
+
+<div class="diagram">
+<pre>
+  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+  │  Selection   │    │  Extraction │    │ Consolidation│
+  │  选择相关记忆 │    │  提取新记忆  │    │  合并去重     │
+  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘
+         │                  │                  │
+    对话前注入          每轮结束后           文件数超阈值
+</pre>
+</div>
+
+<h2>存储格式</h2>
+
+<p>记忆存储为 <code>.memory/</code> 目录下的 Markdown 文件，带 YAML frontmatter：</p>
+
+<pre><code>---
+name: user-preferences
+description: 用户喜欢简洁的代码风格
+type: user
+---
+
+用户偏好：
+- 代码风格：简洁，不要过度注释
+- 语言：Python，不用 TypeScript
+- 测试框架：pytest</code></pre>
+
+<h2>Selection：对话前注入相关记忆</h2>
+
+<pre><code>def select_relevant_memories(messages):
+    """用 LLM 从记忆目录中挑选相关的"""
+    catalog = "\n".join(f"- {m['name']}: {m['description']}" for m in all_memories)
+    recent = messages[-4:]  # 最近 2 轮对话
+
+    response = client.messages.create(
+        model=SMALL_MODEL,
+        messages=[{"role": "user", "content": f"对话:\n{recent}\n\n记忆目录:\n{catalog}\n\n选出相关的记忆文件名（JSON 数组）"}],
+    )
+    return parse_filenames(response)</code></pre>
+
+<h2>Extraction：每轮结束后提取新记忆</h2>
+
+<pre><code>def extract_memories(messages):
+    """对话后，提取用户偏好和项目事实"""
+    response = client.messages.create(
+        model=SMALL_MODEL,
+        messages=[{"role": "user", "content": f"从这段对话中提取用户偏好或项目事实:\n{messages[-2:]}"}],
+    )
+    new_facts = parse_json(response)
+    for fact in new_facts:
+        write_memory_file(fact)  # 写入 .memory/</code></pre>
+
+<h2>前端类比</h2>
+
+<p>Selection 像搜索引擎的<strong>检索</strong>（先找相关文档再展示），Extraction 像<strong>埋点采集</strong>（用户操作后自动记录），Consolidation 像<strong>缓存 GC</strong>（超过阈值时清理合并）。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>记忆系统让 Agent 有了长期记忆。但系统提示词还是硬编码的。<strong>下一课：<a href="0010-system-prompt.html">第 10 课 — System Prompt（动态提示词）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '为什么记忆选择（Selection）用 LLM 而不是关键词匹配？',
+    options: [
+      '关键词匹配太慢',
+      'LLM 能理解语义相关性，关键词只能做精确匹配',
+      'API 要求必须用 LLM',
+      '关键词匹配不支持中文',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！如果用户说"我喜欢简洁风格"，关键词匹配找不到"代码风格：简洁"。但 LLM 能理解这两句话在说同一件事。代码里也有关键词匹配作为 fallback。',
+  },
+]);
+</script>
+
+</body>
+</html>

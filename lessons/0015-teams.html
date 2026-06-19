@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 15 课: Agent Teams — Agent 团队</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 15 课: Agent Teams — Agent 团队</h1>
+
+<p class="info">一个 Agent 处理不了复杂项目？这一课让<strong>多个 Agent 协作</strong>，通过消息总线通信。</p>
+
+<h2>架构</h2>
+
+<div class="diagram">
+<pre>
+  ┌───────────────────────────────────────────┐
+  │              Lead Agent                    │
+  │  (主循环，分配任务，协调团队)                │
+  └──────┬──────────────┬──────────────┬───────┘
+         │              │              │
+    ┌────▼────┐   ┌────▼────┐   ┌────▼────┐
+    │ Teammate│   │ Teammate│   │ Teammate│
+    │ "Alice" │   │ "Bob"   │   │ "Carol" │
+    │ (线程)  │   │ (线程)  │   │ (线程)  │
+    └────┬────┘   └────┬────┘   └────┬────┘
+         │              │              │
+         └──────────────┼──────────────┘
+                        │
+                  ┌─────▼─────┐
+                  │ MessageBus │
+                  │ (JSONL 文件)│
+                  └───────────┘
+</pre>
+</div>
+
+<h2>MessageBus：文件邮箱</h2>
+
+<pre><code>class MessageBus:
+    def send(self, from_agent, to_agent, content, msg_type="message"):
+        msg = {"from": from_agent, "to": to_agent,
+               "type": msg_type, "content": content,
+               "timestamp": time.time()}
+        inbox = MAILBOX_DIR / f"{to_agent}.jsonl"
+        with open(inbox, "a") as f:
+            f.write(json.dumps(msg) + "\n")  # 追加写入
+
+    def read_inbox(self, agent):
+        inbox = MAILBOX_DIR / f"{agent}.jsonl"
+        if not inbox.exists():
+            return []
+        msgs = [json.loads(line) for line in inbox.read_text().splitlines()]
+        inbox.unlink()  # 破坏性读取：读完就删
+        return msgs</code></pre>
+
+<div class="info">
+  <strong>破坏性读取</strong>：读完邮件后删除文件。这样每条消息只会被处理一次，就像从队列中消费消息。
+</div>
+
+<h2>前端类比</h2>
+
+<p>这就是 Web Workers 通过 <code>postMessage</code> 通信，或者微前端架构通过消息代理共享数据。破坏性读取像从 RabbitMQ/Kafka 消费消息。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>团队能通信了，但怎么协调？<strong>下一课：<a href="0016-protocols.html">第 16 课 — Team Protocols（团队协议）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '为什么用文件（JSONL）作为消息总线，而不是内存中的队列？',
+    options: [
+      '文件比内存快',
+      '文件可持久化、可跨进程、可人工检查',
+      'Python 不支持内存队列',
+      'JSONL 格式更安全',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！文件邮箱的好处：进程重启后消息还在（持久化）、不同进程可以读写（跨进程）、出了问题可以直接打开文件排查（可调试）。',
+  },
+]);
+</script>
+
+</body>
+</html>

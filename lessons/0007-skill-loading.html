@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 7 课: Skill Loading — 技能加载</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 7 课: Skill Loading — 技能加载</h1>
+
+<p class="info">Agent 需要很多知识，但不是每次都用到全部。这一课实现<strong>按需加载</strong>，只在需要时才注入完整知识。</p>
+
+<h2>问题：知识太多，上下文装不下</h2>
+
+<p>如果把所有技能文档都塞进系统提示词，token 会被大量占用，留给真正对话的空间就少了。</p>
+
+<h2>两级注入</h2>
+
+<div class="diagram">
+<pre>
+  启动时（轻量）
+  ┌─────────────────────────────────┐
+  │ 系统提示词 += 技能目录           │
+  │ "code-review: 检查代码质量..."   │  ~100 tokens/技能
+  │ "pdf: 生成 PDF 文档..."         │
+  └─────────────────────────────────┘
+
+  需要时（按需加载）
+  ┌─────────────────────────────────┐
+  │ 模型调用 load_skill("code-review")│
+  │ → 返回完整 SKILL.md 内容         │  ~2000 tokens/技能
+  └─────────────────────────────────┘
+</pre>
+</div>
+
+<h2>代码实现</h2>
+
+<pre><code>SKILL_REGISTRY: dict[str, dict] = {}
+
+def _scan_skills():
+    """启动时扫描 skills/ 目录，只读名字和描述"""
+    for skill_dir in sorted(SKILLS_DIR.iterdir()):
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+        frontmatter, body = _parse_frontmatter(skill_file.read_text())
+        SKILL_REGISTRY[skill_dir.name] = {
+            "name": skill_dir.name,
+            "description": frontmatter.get("description", ""),
+            "path": str(skill_file),
+        }
+
+def load_skill(name: str) -> str:
+    """模型调用时，返回完整内容"""
+    skill = SKILL_REGISTRY.get(name)
+    if not skill:
+        return f"Unknown skill: {name}"
+    return Path(skill["path"]).read_text()
+
+# 系统提示词只注入目录
+def build_system():
+    catalog = "\n".join(
+        f"- {s['name']}: {s['description']}"
+        for s in SKILL_REGISTRY.values()
+    )
+    return f"Available skills:\n{catalog}\nUse load_skill(name) to load."</code></pre>
+
+<h2>前端类比</h2>
+
+<p>这就是 <strong>React 路由懒加载</strong>：路由表（系统提示词）告诉 app 有哪些页面，但组件代码只在用户导航到该路由时才加载。</p>
+
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>text.split("---", 2)</code></td><td><code>text.split("---")</code></td><td>第三个参数限制分割次数</td></tr>
+  <tr><td><code>dict[str, dict]</code></td><td><code>Record&lt;string, Record&gt;</code></td><td>Python 3.9+ 泛型语法</td></tr>
+</table>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>技能按需加载了，但对话越来越长怎么办？<strong>下一课：<a href="0008-compaction.html">第 8 课 — Context Compact（上下文压缩）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '为什么不在启动时就把所有技能内容注入系统提示词？',
+    options: [
+      '因为技能文件太大，读取慢',
+      '因为会浪费 token，不是每次对话都需要所有技能',
+      '因为 API 不允许',
+      '因为技能内容会变化',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！Token 是稀缺资源。如果只用了 3 个技能却注入了 20 个的完整内容，浪费了 17 个技能的 token 空间。目录 + 按需加载是最优解。',
+  },
+]);
+</script>
+
+</body>
+</html>

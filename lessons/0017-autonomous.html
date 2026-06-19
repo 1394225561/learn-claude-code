@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 17 课: Autonomous Agent — 自治 Agent</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 17 课: Autonomous Agent — 自治 Agent</h1>
+
+<p class="info">之前 Teammate 被动等 Lead 分配任务。这一课让它们<strong>主动找工作</strong>，实现自组织。</p>
+
+<h2>生命周期</h2>
+
+<div class="diagram">
+<pre>
+  ┌──────┐     领取任务     ┌──────┐
+  │ IDLE │ ──────────────> │ WORK │
+  │      │ <────────────── │      │
+  └──┬───┘     完成任务     └──────┘
+     │ 超时
+     ▼
+  ┌──────────┐
+  │ SHUTDOWN │
+  └──────────┘
+</pre>
+</div>
+
+<h2>空闲轮询</h2>
+
+<pre><code>IDLE_TIMEOUT = 60       # 空闲 60 秒后退出
+IDLE_POLL_INTERVAL = 5  # 每 5 秒检查一次
+
+def idle_poll(agent_name, messages, name, role) -> str:
+    """WORK → IDLE：主动寻找新任务"""
+    for _ in range(IDLE_TIMEOUT // IDLE_POLL_INTERVAL):
+        time.sleep(IDLE_POLL_INTERVAL)
+
+        # 优先级 1：检查收件箱（Lead 可能有新指令）
+        inbox = BUS.read_inbox(agent_name)
+        if inbox:
+            return "work"  # 有消息，回到工作状态
+
+        # 优先级 2：扫描任务板
+        unclaimed = scan_unclaimed_tasks()
+        if unclaimed:
+            claim_task(unclaimed[0]["id"], agent_name)
+            return "work"  # 找到任务，开始工作
+
+    return "timeout"  # 空闲太久，准备退出</code></pre>
+
+<h2>扫描未认领任务</h2>
+
+<pre><code>def scan_unclaimed_tasks():
+    """找 pending、无 owner、依赖已满足的任务"""
+    tasks = load_all_tasks()
+    return [
+        t for t in tasks
+        if t["status"] == "pending"
+        and not t.get("owner")        # 没人认领
+        and can_start(t["id"])        # 依赖都完成了
+    ]</code></pre>
+
+<h2>前端类比</h2>
+
+<p>这就是 Worker Pool + 任务队列模式。空闲轮询像 Service Worker 的 <code>periodicsync</code>，自动认领像 Redis 分布式锁或 Bull/BullMQ 任务队列。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>多个 Agent 并行修改同一个仓库会冲突。<strong>下一课：<a href="0018-worktree.html">第 18 课 — Worktree（工作树隔离）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: 'idle_poll 中为什么优先检查收件箱，再扫描任务板？',
+    options: [
+      '收件箱检查更快',
+      'Lead 的指令优先级高于自主发现的任务',
+      '任务板扫描消耗更多 CPU',
+      '收件箱消息会自动消失',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！Lead 可能发来紧急指令（比如"停止当前任务"），这些应该比自主发现的任务优先处理。收件箱是"上级指令"，任务板是"待办事项"。',
+  },
+]);
+</script>
+
+</body>
+</html>

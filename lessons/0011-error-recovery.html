@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 11 课: Error Recovery — 错误恢复</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 11 课: Error Recovery — 错误恢复</h1>
+
+<p class="info">API 会限流、会超时、会返回错误。这一课让 Agent <strong>优雅地处理各种故障</strong>。</p>
+
+<h2>三种故障路径</h2>
+
+<table>
+  <tr><th>故障类型</th><th>症状</th><th>恢复策略</th></tr>
+  <tr><td>瞬时故障</td><td>429/529 限流</td><td>指数退避重试，连续 529 切换备用模型</td></tr>
+  <tr><td>输出截断</td><td><code>stop_reason == "max_tokens"</code></td><td>升级 max_tokens（8K→64K），或注入继续提示</td></tr>
+  <tr><td>上下文溢出</td><td><code>prompt_too_long</code></td><td>触发响应式压缩（reactive_compact）</td></tr>
+</table>
+
+<h2>指数退避</h2>
+
+<pre><code>def with_retry(fn, state):
+    for attempt in range(5):
+        try:
+            return fn()
+        except RateLimitError as e:
+            delay = min(500 * (2 ** attempt), 32000)  # 500ms → 1s → 2s → 4s → 8s
+            delay += random.uniform(0, delay * 0.25)   # 加抖动，避免雷群效应
+            time.sleep(delay / 1000)
+
+            if is_529(e):
+                state.consecutive_529 += 1
+                if state.consecutive_529 >= 3:
+                    state.current_model = FALLBACK_MODEL  # 切换备用模型
+            raise</code></pre>
+
+<h2>RecoveryState</h2>
+
+<pre><code>class RecoveryState:
+    def __init__(self):
+        self.consecutive_529 = 0
+        self.current_model = PRIMARY_MODEL
+        self.max_tokens_recoveries = 0
+        self.has_compacted = False</code></pre>
+
+<h2>前端类比</h2>
+
+<p>这就是 <code>axios-retry</code>、Service Worker 的离线重试、CDN 故障切换。<code>max_tokens</code> 升级像分页请求——第一页数据截断了，就请求更大的页面。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>错误恢复让 Agent 更健壮。现在让它能<strong>追踪复杂任务</strong>。<strong>下一课：<a href="0012-task.html">第 12 课 — Task System（任务系统）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '指数退避中为什么要加"抖动"（jitter）？',
+    options: [
+      '为了节省 CPU',
+      '为了防止多个客户端同时重试造成"雷群效应"',
+      '为了减少网络延迟',
+      '为了提高成功率',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！如果所有客户端都在 1s、2s、4s 同一时刻重试，会再次触发限流。加随机抖动让重试分散到不同时间点。',
+  },
+]);
+</script>
+
+</body>
+</html>

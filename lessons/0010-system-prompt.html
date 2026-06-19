@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 10 课: System Prompt — 动态提示词组装</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 10 课: System Prompt — 动态提示词组装</h1>
+
+<p class="info">之前系统提示词是硬编码的字符串。这一课把它变成<strong>按运行时状态动态组装</strong>的模块化系统。</p>
+
+<h2>问题：硬编码的提示词不灵活</h2>
+
+<p>随着 Agent 越来越复杂（有工具、有记忆、有技能、有 MCP），系统提示词需要包含越来越多信息。但不是每次都需要所有信息——没有记忆时不需要注入记忆索引，没连 MCP 时不需要 MCP 描述。</p>
+
+<h2>核心思路：分段注册，按需组装</h2>
+
+<pre><code># 每个段落注册到字典
+PROMPT_SECTIONS = {
+    "identity":  lambda ctx: "You are a coding agent...",
+    "tools":     lambda ctx: f"Available tools: {ctx['tool_names']}",
+    "workspace": lambda ctx: f"Working directory: {ctx['cwd']}",
+    "memory":    lambda ctx: ctx.get("memory_index", ""),
+}
+
+def assemble_system_prompt(context):
+    sections = []
+    for name, builder in PROMPT_SECTIONS.items():
+        content = builder(context)
+        if content:  # 空内容不注入
+            sections.append(content)
+    return "\n\n".join(sections)</code></pre>
+
+<h2>缓存：避免重复组装</h2>
+
+<p>如果上下文没变，提示词也不需要重新组装。用一个缓存键来判断：</p>
+
+<pre><code>_last_context_key = None
+_last_prompt = None
+
+def get_system_prompt(context):
+    global _last_context_key, _last_prompt
+    # 用 JSON 作为确定性缓存键（不能用 hash，因为 Python hash 会随机化）
+    key = json.dumps(context, sort_keys=True)
+    if key == _last_context_key:
+        return _last_prompt  # 缓存命中
+    _last_prompt = assemble_system_prompt(context)
+    _last_context_key = key
+    return _last_prompt</code></pre>
+
+<div class="info">
+  <strong>为什么不用 Python 的 hash()？</strong>Python 的 <code>hash()</code> 在每次运行时会随机化（安全特性），所以同样的输入会产生不同的哈希值。<code>json.dumps(sort_keys=True)</code> 是确定性的。
+</div>
+
+<h2>前端类比</h2>
+
+<table>
+  <tr><th>前端概念</th><th>System Prompt 对应</th></tr>
+  <tr><td>组件注册表</td><td><code>PROMPT_SECTIONS</code> 字典</td></tr>
+  <tr><td>布局引擎（按页面状态选择组件）</td><td><code>assemble_system_prompt()</code></td></tr>
+  <tr><td><code>React.memo</code> / <code>useMemo</code></td><td><code>get_system_prompt()</code> 缓存</td></tr>
+  <tr><td>Feature Flags</td><td>按 context 决定注入哪些段落</td></tr>
+</table>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>提示词组装好了，但 API 调用会出错。<strong>下一课：<a href="0011-error-recovery.html">第 11 课 — Error Recovery（错误恢复）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '为什么用 json.dumps 而不是 hash() 来做缓存键？',
+    options: [
+      'json.dumps 更快',
+      'Python 的 hash() 每次运行会随机化，同样的输入产生不同结果',
+      'hash() 不支持字典类型',
+      'json.dumps 更安全',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！Python 出于安全考虑会随机化 hash seed，所以同样的字典在不同运行中 hash 值不同。json.dumps(sort_keys=True) 是确定性的。',
+  },
+]);
+</script>
+
+</body>
+</html>

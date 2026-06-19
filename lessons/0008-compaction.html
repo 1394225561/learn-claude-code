@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 8 课: Context Compact — 上下文压缩</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 8 课: Context Compact — 上下文压缩</h1>
+
+<p class="info">对话越来越长，上下文窗口会满。这一课用<strong>四层压缩策略</strong>保持上下文精简。</p>
+
+<h2>四层压缩管线</h2>
+
+<p>从便宜到昂贵，逐层应用：</p>
+
+<table>
+  <tr><th>层</th><th>策略</th><th>成本</th><th>做法</th></tr>
+  <tr><td>L3</td><td>tool_result_budget</td><td>最低</td><td>大结果存磁盘，只留预览</td></tr>
+  <tr><td>L1</td><td>snip_compact</td><td>低</td><td>消息超 50 条时裁剪中间，保留头尾</td></tr>
+  <tr><td>L2</td><td>micro_compact</td><td>低</td><td>旧工具结果替换为一行摘要</td></tr>
+  <tr><td>L4</td><td>compact_history</td><td>最高</td><td>用 LLM 生成完整对话摘要</td></tr>
+</table>
+
+<h2>核心代码</h2>
+
+<pre><code>def prepare_context(messages):
+    """每轮调用 LLM 前执行"""
+    messages[:] = tool_result_budget(messages)  # L3: 大结果存盘
+    messages[:] = snip_compact(messages)        # L1: 裁剪中间
+    messages[:] = micro_compact(messages)       # L2: 旧结果摘要
+    messages[:] = compact_history(messages)     # L4: LLM 摘要</code></pre>
+
+<div class="warn">
+  <strong><code>messages[:] = ...</code></strong> 是 Python 的切片赋值——原地修改列表内容，而不是创建新列表。JS 里你会写 <code>messages.splice(0, messages.length, ...newItems)</code>。
+</div>
+
+<h2>每层详解</h2>
+
+<h3>L3: tool_result_budget — 大结果存磁盘</h3>
+<pre><code>def tool_result_budget(messages, max_chars=5000):
+    for msg in messages:
+        if isinstance(msg.get("content"), list):
+            for block in msg["content"]:
+                if block.get("type") == "tool_result":
+                    content = block.get("content", "")
+                    if len(str(content)) > max_chars:
+                        # 存磁盘，只留预览
+                        path = save_to_disk(content)
+                        block["content"] = f"[Saved to {path}]\n{str(content)[:500]}"
+    return messages</code></pre>
+
+<h3>L1: snip_compact — 裁剪中间消息</h3>
+<pre><code>def snip_compact(messages, max_messages=50):
+    if len(messages) <= max_messages:
+        return messages
+    # 保留前 10 条 + 后 20 条，中间用摘要替代
+    head = messages[:10]
+    tail = messages[-20:]
+    return head + [{"role": "user", "content": "[Earlier messages compacted]"}] + tail</code></pre>
+
+<h2>前端类比</h2>
+
+<p>这就是 <strong>react-window 虚拟列表</strong> + <strong>Service Worker 缓存淘汰策略</strong>。只渲染可见行，中间空白；缓存满了先淘汰最老的。</p>
+
+<h2>测验</h2>
+
+<div id="quiz-container"></div>
+
+<h2>下一步</h2>
+
+<p>上下文压缩解决了"装不下"的问题。但 Agent 每次对话都从零开始。<strong>下一课：<a href="0009-memory.html">第 9 课 — Memory（记忆系统）</a></strong>。</p>
+
+<footer>
+  <p>💬 有疑问？随时问我。</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '四层压缩为什么按 L3→L1→L2→L4 的顺序执行？',
+    options: [
+      '随意排列的',
+      '从最便宜到最昂贵，尽量用低成本策略解决问题',
+      'L4 必须在最后，因为前面的层会改变消息格式',
+      '按照代码行数排序',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！先用零成本的文本操作（存盘、裁剪、替换），解决不了才用昂贵的 LLM 摘要。这是"渐进式升级"策略。',
+  },
+]);
+</script>
+
+</body>
+</html>
