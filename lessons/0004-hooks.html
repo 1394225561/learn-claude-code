@@ -81,6 +81,15 @@ def trigger_hooks(event: str, *args):
 
 <p>这就是 <code>EventEmitter</code>、Vue Router 的导航守卫、Express 的中间件链。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>*args</code></td><td><code>...args</code></td><td>可变参数，Python 收集为元组，JS 收集为数组</td></tr>
+  <tr><td><code>return None</code></td><td><code>return</code></td><td>Python 用 None 表示"无值"，类似 JS 的 undefined</td></tr>
+  <tr><td><code>HOOKS = {"key": []}</code></td><td><code>const hooks = { key: [] }</code></td><td>字典/对象字面量，语法几乎一样</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

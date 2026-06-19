@@ -69,6 +69,16 @@ type: user
 
 <p>Selection 像搜索引擎的<strong>检索</strong>（先找相关文档再展示），Extraction 像<strong>埋点采集</strong>（用户操作后自动记录），Consolidation 像<strong>缓存 GC</strong>（超过阈值时清理合并）。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>str | None</code></td><td><code>string | null</code></td><td>Python 3.10+ 联合类型语法</td></tr>
+  <tr><td><code>getattr(b, "text", "")</code></td><td><code>b?.text ?? ""</code></td><td>安全属性访问，有默认值</td></tr>
+  <tr><td><code>f.write_text(content)</code></td><td><code>fs.writeFileSync(f, content)</code></td><td>Path 便捷写入，一步完成</td></tr>
+  <tr><td><code>text.split("---", 2)</code></td><td><code>text.split("---")</code></td><td>第三个参数限制分割次数</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

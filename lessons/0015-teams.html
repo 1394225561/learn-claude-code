@@ -63,6 +63,16 @@
 
 <p>这就是 Web Workers 通过 <code>postMessage</code> 通信，或者微前端架构通过消息代理共享数据。破坏性读取像从 RabbitMQ/Kafka 消费消息。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>path / f"{name}.jsonl"</code></td><td><code>path.join(dir, `${name}.jsonl`)</code></td><td>Path 对象用 / 拼接路径</td></tr>
+  <tr><td><code>json.dumps(msg)</code> / <code>json.loads(line)</code></td><td><code>JSON.stringify</code> / <code>JSON.parse</code></td><td>JSON 序列化/反序列化</td></tr>
+  <tr><td><code>inbox.unlink()</code></td><td><code>fs.unlinkSync(path)</code></td><td>删除文件</td></tr>
+  <tr><td><code>open(inbox, "a")</code></td><td><code>fs.appendFileSync(path)</code></td><td>追加写入模式</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

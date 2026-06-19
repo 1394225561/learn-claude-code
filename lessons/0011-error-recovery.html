@@ -36,7 +36,7 @@
                 state.consecutive_529 += 1
                 if state.consecutive_529 >= 3:
                     state.current_model = FALLBACK_MODEL  # 切换备用模型
-            raise</code></pre>
+    raise  # 所有重试都失败后，抛出最后一个异常</code></pre>
 
 <h2>RecoveryState</h2>
 
@@ -50,6 +50,16 @@
 <h2>前端类比</h2>
 
 <p>这就是 <code>axios-retry</code>、Service Worker 的离线重试、CDN 故障切换。<code>max_tokens</code> 升级像分页请求——第一页数据截断了，就请求更大的页面。</p>
+
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>try: ... except E as e:</code></td><td><code>try { ... } catch (e) {</code></td><td>Python 用 except 而非 catch</td></tr>
+  <tr><td><code>time.sleep(seconds)</code></td><td><code>await new Promise(r => setTimeout(r, ms))</code></td><td>Python 是阻塞 sleep，JS 需要异步</td></tr>
+  <tr><td><code>random.uniform(0, x)</code></td><td><code>Math.random() * x</code></td><td>随机浮点数</td></tr>
+  <tr><td><code>type(e).__name__</code></td><td><code>e.constructor.name</code></td><td>获取异常/错误的类名</td></tr>
+</table>
 
 <h2>测验</h2>
 

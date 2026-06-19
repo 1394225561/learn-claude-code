@@ -138,6 +138,10 @@ while True:
   <li><strong>文件即数据库</strong>：所有持久化都用扁平文件（JSON/JSONL），无数据库</li>
 </ol>
 
+<h2>综合测验</h2>
+
+<div id="quiz-container"></div>
+
 <h2>接下来做什么？</h2>
 
 <p>你已经理解了 AI Agent 的完整架构。现在可以：</p>
@@ -153,6 +157,45 @@ while True:
   <p>🎉 <strong>恭喜完成全部 20 课！</strong></p>
   <p>💬 有任何问题，随时问我。</p>
 </footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render('quiz-container', [
+  {
+    question: '以下哪个设计原则贯穿了全部 20 课？',
+    options: [
+      '面向对象编程',
+      '模型决策，Harness 执行',
+      '事件驱动架构',
+      '微服务模式',
+    ],
+    answer: 1,
+    explanation: '✅ 正确！从 s01 到 s20，循环的核心始终是：模型决定调不调工具，Harness 只负责执行。所有机制（权限、Hook、记忆、多 Agent）都叠加在这个原则之上。',
+  },
+  {
+    question: '新增一个工具时，需要修改 agent loop 吗？',
+    options: [
+      '需要，在循环里加一个 if 分支',
+      '需要，修改 TOOLS 列表和循环代码',
+      '不需要，只需在 TOOL_HANDLERS 加一个条目',
+      '不需要，工具会自动注册',
+    ],
+    answer: 2,
+    explanation: '✅ 正确！这就是"开闭原则"——对扩展开放（加一个 handler），对修改封闭（循环不变）。调度表模式让新增工具的成本降到最低。',
+  },
+  {
+    question: '子 Agent 为什么不能递归创建子 Agent？',
+    options: [
+      'Python 语言禁止了递归',
+      'API 限制了嵌套调用',
+      '子 Agent 的工具列表里没有 task 工具',
+      'Agent Loop 检测到递归会中断',
+    ],
+    answer: 2,
+    explanation: '✅ 正确！通过排除法——从 SUB_TOOLS 中移除 task，子 Agent 就没有能力再派子 Agent。简单但有效的递归防护。',
+  },
+]);
+</script>
 
 </body>
 </html>

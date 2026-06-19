@@ -30,6 +30,8 @@ def start_background_task(block) -> str:
     _bg_counter += 1
     bg_id = f"bg_{_bg_counter:04d}"
 
+    background_tasks[bg_id] = {"status": "running", "command": block.input}
+
     def worker():
         result = execute_tool(block)  # 在新线程中执行
         with background_lock:
@@ -54,7 +56,16 @@ def start_background_task(block) -> str:
 
 <h2>前端类比</h2>
 
-<p>这就是 <code>setTimeout</code>/<code>Promise</code> + 通知队列。启动异步操作，立即返回 ID，完成后通过回调注入结果。像 toast 通知一样："后台任务完成了！"</p>
+<p>这就是 <strong>Web Worker</strong> + 通知队列。Python 的 <code>threading.Thread</code> 是真正的 OS 线程（不是 JS 的事件循环），类似 Web Worker 在独立线程中执行。完成后通过通知注入结果，像 toast 一样："后台任务完成了！"</p>
+
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>threading.Thread(target=fn, daemon=True)</code></td><td><code>new Worker(url)</code></td><td>OS 线程 vs Web Worker（Python 线程可并行 I/O）</td></tr>
+  <tr><td><code>with lock:</code></td><td>无直接等价</td><td>上下文管理器自动获取/释放锁（JS 用 try/finally）</td></tr>
+  <tr><td><code>threading.Lock()</code></td><td>无直接等价</td><td>互斥锁（JS 单线程不需要，但 SharedArrayBuffer 需要 Atomics）</td></tr>
+</table>
 
 <h2>测验</h2>
 

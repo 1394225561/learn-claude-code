@@ -63,6 +63,16 @@ def assemble_tool_pool():
 
 <p>这就是 VS Code 的扩展系统或浏览器扩展架构。宿主（Agent）定义插件 API，外部服务（MCP 服务器）注册能力，宿主动态添加到命令面板。<code>mcp__server__tool</code> 命名就像 VS Code 扩展命令 ID（<code>extension.commandName</code>）。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>lambda *, c=val, **kw: expr</code></td><td>无直接等价</td><td>关键字参数 + 默认值捕获 + kwargs 展开</td></tr>
+  <tr><td><code>**kw</code></td><td><code>...args</code></td><td>收集关键字参数（类似 JS rest 参数，但按名称而非位置）</td></tr>
+  <tr><td><code>re.sub('_', name)</code></td><td><code>name.replace(/re/g, '_')</code></td><td>正则替换</td></tr>
+  <tr><td><code>dict(other)</code></td><td><code>{...other}</code></td><td>浅拷贝字典/对象</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

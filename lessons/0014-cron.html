@@ -56,9 +56,8 @@ class CronJob:
 <p>调度器和 Agent Loop 运行在不同线程，通过 <code>agent_lock</code> 协调：</p>
 
 <pre><code># 调度器：只有 Agent 空闲时才注入任务
-if agent_lock.acquire(blocking=False):  # 非阻塞获取锁
-    cron_queue.append(job)
-    agent_lock.release()
+with agent_lock:                        # 获取锁（with 自动释放）
+    cron_queue.append(job)              # 在锁保护下操作队列
 
 # Agent Loop：每轮开始前消费队列
 def consume_cron_queue():
@@ -70,13 +69,22 @@ def consume_cron_queue():
 
 <p>这就是 <code>setInterval</code> + 消息队列。调度器像 Service Worker 的 periodicSync，队列处理器像 Redux middleware。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>with agent_lock:</code></td><td>无直接等价</td><td>上下文管理器自动获取/释放锁</td></tr>
+  <tr><td><code>datetime.now()</code></td><td><code>new Date()</code></td><td>获取当前时间</td></tr>
+  <tr><td><code>field(default_factory=time.time)</code></td><td><code>createdAt = Date.now()</code></td><td>每次实例化时调用函数生成默认值</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>
 
 <h2>下一步</h2>
 
-<p>单个 Agent 已经很强大了。但复杂任务需要<strong>多个 Agent 协作</strong>。<strong>下一课：<a href="0015-agent-teams.html">第 15 课 — Agent Teams（Agent 团队）</a></strong>。</p>
+<p>单个 Agent 已经很强大了。但复杂任务需要<strong>多个 Agent 协作</strong>。<strong>下一课：<a href="0015-teams.html">第 15 课 — Agent Teams（Agent 团队）</a></strong>。</p>
 
 <footer>
   <p>💬 有疑问？随时问我。</p>

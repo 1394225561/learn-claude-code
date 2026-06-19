@@ -58,6 +58,15 @@ def match_response(response_type, request_id, approve):
 
 <p>这就是 WebSocket/gRPC 的请求-响应关联模式。每个请求有唯一 ID，响应处理器匹配回来。状态机（pending → approved/rejected）和 Redux saga 或 XState 一模一样。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>field(default_factory=time.time)</code></td><td><code>Date.now()</code> in constructor</td><td>每次实例化时调用工厂函数生成默认值</td></tr>
+  <tr><td><code>msg_type.endswith("_response")</code></td><td><code>msgType.endsWith("_response")</code></td><td>字符串后缀检查，语法几乎一样</td></tr>
+  <tr><td><code>dict[str, ProtocolState]</code></td><td><code>Record&lt;string, ProtocolState&gt;</code></td><td>Python 3.9+ 泛型字典</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

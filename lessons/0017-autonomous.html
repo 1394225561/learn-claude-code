@@ -67,6 +67,15 @@ def idle_poll(agent_name, messages, name, role) -> str:
 
 <p>这就是 Worker Pool + 任务队列模式。空闲轮询像 Service Worker 的 <code>periodicsync</code>，自动认领像 Redis 分布式锁或 Bull/BullMQ 任务队列。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>[t for t in tasks if cond]</code></td><td><code>tasks.filter(t => cond)</code></td><td>列表推导式 + 条件过滤（Python 最强大的语法之一）</td></tr>
+  <tr><td><code>json.loads(f.read_text())</code></td><td><code>JSON.parse(fs.readFileSync(f))</code></td><td>链式调用：读取文件 + 解析 JSON</td></tr>
+  <tr><td><code>messages.insert(0, msg)</code></td><td><code>messages.unshift(msg)</code></td><td>列表头部插入</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

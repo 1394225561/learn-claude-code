@@ -56,6 +56,15 @@ if response.stop_reason == "tool_use":
 
 <p>这就是 <code>useReducer</code> 管理的看板状态 + 空闲超时提醒（"别忘了保存"的 toast）。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>global x</code></td><td>无直接等价</td><td>函数内修改模块级变量需显式声明（JS 顶层 var 隐式全局）</td></tr>
+  <tr><td><code>list[dict]</code></td><td><code>Array&lt;Object&gt;</code></td><td>Python 3.9+ 泛型语法，仅用于类型提示</td></tr>
+  <tr><td><code>ast.literal_eval(s)</code></td><td><code>JSON.parse(s)</code></td><td>安全解析 Python 字面量（支持单引号、元组等）</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

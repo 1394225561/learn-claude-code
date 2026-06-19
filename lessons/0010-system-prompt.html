@@ -65,6 +65,15 @@ def get_system_prompt(context):
   <tr><td>Feature Flags</td><td>按 context 决定注入哪些段落</td></tr>
 </table>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>lambda ctx: expr</code></td><td><code>(ctx) => expr</code></td><td>Python lambda 只能单表达式，JS 箭头函数可多行</td></tr>
+  <tr><td><code>json.dumps(ctx, sort_keys=True)</code></td><td>无直接等价</td><td>确定性序列化（JS 的 JSON.stringify 不排序键）</td></tr>
+  <tr><td><code>global _last_prompt</code></td><td>无直接等价</td><td>函数内修改模块级变量需显式声明</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

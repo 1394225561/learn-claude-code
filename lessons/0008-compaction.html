@@ -65,6 +65,16 @@
 
 <p>这就是 <strong>react-window 虚拟列表</strong> + <strong>Service Worker 缓存淘汰策略</strong>。只渲染可见行，中间空白；缓存满了先淘汰最老的。</p>
 
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>messages[:] = fn(messages)</code></td><td><code>messages = fn(messages)</code></td><td>切片赋值原地修改列表，JS 需要重新赋值</td></tr>
+  <tr><td><code>len(str(msgs))</code></td><td><code>JSON.stringify(msgs).length</code></td><td>粗略 token 估算</td></tr>
+  <tr><td><code>with path.open("w") as f:</code></td><td>无直接等价</td><td>上下文管理器，自动关闭文件（JS 用 fs.writeFileSync）</td></tr>
+  <tr><td><code>enumerate(messages)</code></td><td><code>messages.entries()</code></td><td>同时获取索引和值</td></tr>
+</table>
+
 <h2>测验</h2>
 
 <div id="quiz-container"></div>

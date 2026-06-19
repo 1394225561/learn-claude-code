@@ -53,6 +53,7 @@
 <p>删除 worktree 前检查是否有未提交的更改：</p>
 
 <pre><code>def remove_worktree(name, force=False):
+    path = WORKTREE_DIR / name
     if not force:
         # 检查是否有未提交的更改
         ok, output = run_git(["-C", str(path), "status", "--porcelain"])
@@ -66,6 +67,16 @@
 <h2>前端类比</h2>
 
 <p>Worktree 就像 Docker 容器——每个任务有自己的隔离文件系统，绑定到 CI/CD job。安全检查就像 <code>docker rm</code> 拒绝删除运行中的容器。</p>
+
+<h2>Python 语法速查</h2>
+
+<table>
+  <tr><th>Python</th><th>JavaScript</th><th>说明</th></tr>
+  <tr><td><code>re.compile(r'pattern')</code></td><td><code>/pattern/</code></td><td>编译正则表达式（Python 需要显式编译）</td></tr>
+  <tr><td><code>subprocess.run(["git"] + args)</code></td><td><code>child_process.execSync(cmd)</code></td><td>执行外部命令</td></tr>
+  <tr><td><code>return ok, result</code></td><td><code>return { ok, result }</code></td><td>Python 返回元组，JS 返回对象</td></tr>
+  <tr><td><code>ok, result = func()</code></td><td><code>const { ok, result } = func()</code></td><td>Python 元组解包 vs JS 解构赋值</td></tr>
+</table>
 
 <h2>测验</h2>
 
