@@ -1,0 +1,215 @@
+<template id="ending-template">
+  <div data-composition-id="ending" data-width="1920" data-height="1080" data-duration="13">
+    <div class="canvas">
+      <div class="dot-grid"></div>
+      <div class="glow glow-purple"></div>
+      <div class="glow glow-green"></div>
+
+      <!-- Title -->
+      <div class="title-group">
+        <div class="title-text">稳定的核心，可插拔的扩展。</div>
+      </div>
+
+      <!-- Summary table -->
+      <div class="summary-table">
+        <div class="table-header">
+          <span class="col-ch">章节</span>
+          <span class="col-where">变更位置</span>
+          <span class="col-what">变更内容</span>
+          <span class="col-loop">循环变了吗</span>
+        </div>
+        <div class="table-row row-1">
+          <span class="col-ch"><span class="ch-badge" style="color:#F24E1E;border-color:rgba(242,78,30,0.3)">s01</span></span>
+          <span class="col-where">整体</span>
+          <span class="col-what">新建 while True 循环</span>
+          <span class="col-loop">—</span>
+        </div>
+        <div class="table-row row-2">
+          <span class="col-ch"><span class="ch-badge" style="color:#A259FF;border-color:rgba(162,89,255,0.3)">s02</span></span>
+          <span class="col-where">工具执行那 1 行</span>
+          <span class="col-what">硬编码 → 查表分发</span>
+          <span class="col-loop"><span class="no-change">没变</span></span>
+        </div>
+        <div class="table-row row-3">
+          <span class="col-ch"><span class="ch-badge" style="color:#1ABCFE;border-color:rgba(26,188,254,0.3)">s03</span></span>
+          <span class="col-where">工具执行前</span>
+          <span class="col-what">插入权限检查</span>
+          <span class="col-loop"><span class="no-change">没变</span></span>
+        </div>
+        <div class="table-row row-4">
+          <span class="col-ch"><span class="ch-badge" style="color:#0ACF83;border-color:rgba(10,207,131,0.3)">s04</span></span>
+          <span class="col-where">权限检查那 1 行</span>
+          <span class="col-what">硬编码 → hook 注册表</span>
+          <span class="col-loop"><span class="no-change">没变</span></span>
+        </div>
+      </div>
+
+      <!-- Core loop echo -->
+      <div class="loop-echo" id="loop-echo">
+        <div class="echo-label">始终不变的核心</div>
+        <div class="echo-code">
+          <span class="kw">while True</span>:<br>
+          &nbsp;&nbsp;response = <span class="fn">LLM</span>(messages, tools)<br>
+          &nbsp;&nbsp;<span class="kw">if</span> stop_reason != <span class="st">"tool_use"</span>: <span class="kw">return</span><br>
+          &nbsp;&nbsp;execute tools → feed results back
+        </div>
+      </div>
+
+      <!-- Closing -->
+      <div class="closing">这就是 Agent Harness 的全部秘密。</div>
+
+      <div class="reg-mark reg-tl">+</div>
+      <div class="reg-mark reg-br">+</div>
+      <div class="accent-rule"></div>
+    </div>
+
+    <style>
+      [data-composition-id="ending"] {
+        width: 1920px; height: 1080px;
+        position: absolute; overflow: hidden;
+        background: #0a0a0f; color: white;
+        font-family: "Inter", sans-serif;
+      }
+      [data-composition-id="ending"] .canvas { position: absolute; inset: 0; }
+      [data-composition-id="ending"] .dot-grid {
+        position: absolute; inset: 0;
+        background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+      [data-composition-id="ending"] .glow {
+        position: absolute; border-radius: 50%; pointer-events: none;
+        filter: blur(120px); opacity: 0;
+      }
+      [data-composition-id="ending"] .glow-purple {
+        width: 600px; height: 600px; background: #A259FF;
+        left: 400px; top: 100px;
+      }
+      [data-composition-id="ending"] .glow-green {
+        width: 400px; height: 400px; background: #0ACF83;
+        right: 200px; bottom: 200px;
+      }
+      /* Title */
+      [data-composition-id="ending"] .title-group {
+        position: absolute; top: 80px; left: 0; right: 0;
+        text-align: center;
+      }
+      [data-composition-id="ending"] .title-text {
+        font-size: 56px; font-weight: 900;
+        letter-spacing: -0.02em; color: white;
+        opacity: 0; transform: translateY(20px);
+      }
+      /* Summary table */
+      [data-composition-id="ending"] .summary-table {
+        position: absolute; top: 220px; left: 200px; right: 200px;
+      }
+      [data-composition-id="ending"] .table-header {
+        display: flex; gap: 24px; padding: 12px 24px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 8px; opacity: 0;
+      }
+      [data-composition-id="ending"] .table-header span {
+        font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.25);
+        text-transform: uppercase; letter-spacing: 0.1em;
+      }
+      [data-composition-id="ending"] .table-row {
+        display: flex; gap: 24px; padding: 18px 24px;
+        border-radius: 12px; align-items: center;
+        background: rgba(255,255,255,0.01);
+        border: 1px solid rgba(255,255,255,0.03);
+        margin-bottom: 4px;
+        opacity: 0; transform: translateX(-20px);
+      }
+      [data-composition-id="ending"] .col-ch { flex: 0 0 80px; }
+      [data-composition-id="ending"] .col-where { flex: 1; font-size: 20px; color: rgba(255,255,255,0.6); }
+      [data-composition-id="ending"] .col-what { flex: 1.5; font-size: 20px; color: rgba(255,255,255,0.8); font-weight: 600; }
+      [data-composition-id="ending"] .col-loop { flex: 0 0 120px; text-align: center; }
+      [data-composition-id="ending"] .ch-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 15px; font-weight: 700;
+        padding: 4px 12px; border-radius: 8px;
+        border: 1px solid;
+      }
+      [data-composition-id="ending"] .no-change {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 15px; font-weight: 600; color: #0ACF83;
+        background: rgba(10,207,131,0.08);
+        padding: 4px 12px; border-radius: 6px;
+        border: 1px solid rgba(10,207,131,0.2);
+      }
+      /* Loop echo */
+      [data-composition-id="ending"] .loop-echo {
+        position: absolute; bottom: 200px; left: 0; right: 0;
+        text-align: center; opacity: 0;
+      }
+      [data-composition-id="ending"] .echo-label {
+        font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.25);
+        text-transform: uppercase; letter-spacing: 0.12em;
+        margin-bottom: 16px;
+      }
+      [data-composition-id="ending"] .echo-code {
+        display: inline-block;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px; line-height: 1.8;
+        color: rgba(255,255,255,0.5);
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px; padding: 20px 32px;
+        text-align: left;
+      }
+      [data-composition-id="ending"] .echo-code .kw { color: #C586C0; }
+      [data-composition-id="ending"] .echo-code .fn { color: #DCDCAA; }
+      [data-composition-id="ending"] .echo-code .st { color: #CE9178; }
+      /* Closing */
+      [data-composition-id="ending"] .closing {
+        position: absolute; bottom: 100px; left: 0; right: 0;
+        text-align: center;
+        font-size: 28px; font-weight: 500; color: rgba(255,255,255,0.3);
+        opacity: 0;
+      }
+      /* Reg marks */
+      [data-composition-id="ending"] .reg-mark {
+        position: absolute; font-family: "JetBrains Mono", monospace;
+        font-size: 14px; color: rgba(255,255,255,0.08);
+      }
+      [data-composition-id="ending"] .reg-tl { top: 20px; left: 20px; }
+      [data-composition-id="ending"] .reg-br { bottom: 20px; right: 20px; }
+      [data-composition-id="ending"] .accent-rule {
+        position: absolute; bottom: 50px; left: 80px; right: 80px;
+        height: 1px; background: rgba(255,255,255,0.06);
+        transform: scaleX(0); transform-origin: left;
+      }
+    </style>
+
+    <script>
+      (function () {
+        var tl = gsap.timeline({ paused: true });
+        var sel = '[data-composition-id="ending"]';
+
+        tl.to(sel + ' .glow-purple', { opacity: 0.08, duration: 1.5 }, 0);
+        tl.to(sel + ' .glow-green', { opacity: 0.06, duration: 1.5 }, 0.3);
+
+        // Title
+        tl.to(sel + ' .title-text', { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.3);
+
+        // Table header
+        tl.to(sel + ' .table-header', { opacity: 1, duration: 0.3 }, 0.8);
+
+        // Table rows stagger
+        ['row-1', 'row-2', 'row-3', 'row-4'].forEach(function (r, i) {
+          tl.to(sel + ' .' + r, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 1.0 + i * 0.2);
+        });
+
+        // Loop echo
+        tl.to(sel + ' .loop-echo', { opacity: 1, duration: 0.6, ease: "power2.out" }, 2.5);
+
+        // Closing
+        tl.to(sel + ' .closing', { opacity: 1, duration: 0.6, ease: "power2.out" }, 3.5);
+
+        tl.to(sel + ' .accent-rule', { scaleX: 1, duration: 1, ease: "power2.out" }, 3.0);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["ending"] = tl;
+      })();
+    </script>
+  </div>
+</template>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>一个循环，四次叠加 — Agent 架构解析</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link href="assets/fonts/fonts.css" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0a0f; font-family: "Inter", sans-serif;
+      }
+      .scene { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+      .caption-text-wrapper {
+        position: absolute; bottom: 20px; left: 0; right: 0;
+        display: flex; justify-content: center; pointer-events: none;
+        overflow: hidden; padding: 10px 0;
+      }
+      .caption-line {
+        color: white; font-size: 42px; font-weight: 600;
+        letter-spacing: -0.02em; text-align: center;
+        text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8), 0 0 40px rgba(162, 89, 255, 0.15);
+        transform: translateY(100%); opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-root" id="root" data-composition-id="main" data-start="0" data-duration="93" data-width="1920" data-height="1080">
+      <div data-hf-id="hf-cover" id="scene-cover" class="scene" data-composition-id="cover" data-composition-src="compositions/cover.html" data-start="0" data-duration="6" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-loop" id="scene-loop" class="scene" data-composition-id="scene-loop" data-composition-src="compositions/scene-loop.html" data-start="6" data-duration="17" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-tools" id="scene-tools" class="scene" data-composition-id="scene-tools" data-composition-src="compositions/scene-tools.html" data-start="23" data-duration="17" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-permission" id="scene-permission" class="scene" data-composition-id="scene-permission" data-composition-src="compositions/scene-permission.html" data-start="40" data-duration="18" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-hooks" id="scene-hooks" class="scene" data-composition-id="scene-hooks" data-composition-src="compositions/scene-hooks.html" data-start="58" data-duration="22" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-ending" id="scene-ending" class="scene" data-composition-id="ending" data-composition-src="compositions/ending.html" data-start="80" data-duration="13" data-track-index="1" data-width="1920" data-height="1080"></div>
+
+      <!-- Captions track -->
+      <div data-hf-id="hf-captions" id="captions-comp" data-composition-id="captions" data-start="0" data-duration="93" data-track-index="2" data-width="1920" data-height="1080">
+        <div data-hf-id="hf-yd6g" class="caption-text-wrapper">
+          <div data-hf-id="hf-apjx" id="caption-text" class="caption-line"></div>
+        </div>
+
+        <script>
+          (function () {
+            var tl = gsap.timeline({ paused: true });
+            var text = document.querySelector("#caption-text");
+            var captions = [
+              // Cover
+              { t: 1, msg: "一个 while True 循环，就是 Agent 的全部秘密。" },
+              { t: 4, msg: "每一章只改一处，循环本身永远不变。" },
+              // s01: Agent Loop
+              { t: 7, msg: "不到 30 行代码，一个最小可运行的 Agent。" },
+              { t: 11, msg: "模型决定调工具，循环继续；模型说停，循环退出。" },
+              { t: 15, msg: "两个信号，一个循环。后面所有机制都叠加在它上面。" },
+              // s02: Tool Use
+              { t: 24, msg: "循环一行没改。只把 run_bash 换成了查表分发。" },
+              { t: 28, msg: "加一个工具，只需加一条定义和一行 handler 映射。" },
+              { t: 33, msg: "硬编码变成注册表。循环不变。" },
+              // s03: Permission
+              { t: 41, msg: "在工具执行前插入一道门，循环还是没改。" },
+              { t: 46, msg: "硬拒绝、规则匹配、用户确认——三道闸门串在一起。" },
+              { t: 51, msg: "安全不能靠信任模型，要靠代码。" },
+              // s04: Hooks
+              { t: 59, msg: "同一招再用一次：硬编码变成注册表。" },
+              { t: 64, msg: "check_permission 换成 trigger_hooks，扩展逻辑挂在循环外面。" },
+              { t: 70, msg: "四个钩子覆盖完整生命周期，循环只负责调用。" },
+              // Ending
+              { t: 81, msg: "循环驱动思考，工具连接世界，权限守护边界，钩子扩展行为。" },
+              { t: 87, msg: "同一个循环，四次叠加。这就是 Agent Harness 的全部秘密。" },
+            ];
+
+            captions.forEach(function (c) {
+              tl.to(text, { opacity: 0, y: -15, duration: 0.2, ease: "power2.in" }, c.t - 0.3);
+              tl.set(text, { innerText: c.msg, y: 30 }, c.t);
+              tl.to(text, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, c.t);
+            });
+            // Final fade out
+            tl.to(text, { opacity: 0, y: -15, duration: 0.4, ease: "power2.in" }, 92);
+
+            window.__timelines = window.__timelines || {};
+            window.__timelines["captions"] = tl;
+          })();
+        </script>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      var mainTl = gsap.timeline({ paused: true });
+
+      mainTl.to("#scene-cover", { opacity: 0, duration: 0.3, ease: "power2.in" }, 5.7);
+      mainTl.set("#scene-cover", { visibility: "hidden" }, 6.0);
+      mainTl.to("#scene-loop", { opacity: 0, duration: 0.3, ease: "power2.in" }, 22.7);
+      mainTl.set("#scene-loop", { visibility: "hidden" }, 23.0);
+      mainTl.to("#scene-tools", { opacity: 0, duration: 0.3, ease: "power2.in" }, 39.7);
+      mainTl.set("#scene-tools", { visibility: "hidden" }, 40.0);
+      mainTl.to("#scene-permission", { opacity: 0, duration: 0.3, ease: "power2.in" }, 57.7);
+      mainTl.set("#scene-permission", { visibility: "hidden" }, 58.0);
+      mainTl.to("#scene-hooks", { opacity: 0, duration: 0.3, ease: "power2.in" }, 79.7);
+      mainTl.set("#scene-hooks", { visibility: "hidden" }, 80.0);
+
+      window.__timelines["main"] = mainTl;
+    </script>
+  </body>
+</html>

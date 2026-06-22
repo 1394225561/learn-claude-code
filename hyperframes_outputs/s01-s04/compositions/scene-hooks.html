@@ -1,0 +1,364 @@
+<template id="scene-hooks-template">
+  <div data-composition-id="scene-hooks" data-width="1920" data-height="1080" data-duration="22">
+    <div class="canvas">
+      <div class="dot-grid"></div>
+      <div class="glow glow-green"></div>
+
+      <div class="section-label">
+        <span class="label-id">04 · Hooks</span><span class="label-phrase">扩展不侵入循环</span>
+        <div class="label-fx">
+          <div class="label-glow"></div>
+          <div class="label-dot dot-1"></div>
+          <div class="label-dot dot-2"></div>
+          <div class="label-dot dot-3"></div>
+          <div class="label-dot dot-4"></div>
+          <div class="label-dot dot-5"></div>
+          <div class="label-dot dot-6"></div>
+        </div>
+      </div>
+      <div class="scene-title">同一招再用一次：硬编码 → 注册表。</div>
+
+      <!-- Code block -->
+      <div class="code-block">
+        <div class="code-lines">
+          <div class="code-line dim" data-line="1"><span class="ln">1</span><span class="kw">def</span> <span class="fn">agent_loop</span>(messages):</div>
+          <div class="code-line dim" data-line="2"><span class="ln">2</span>    <span class="kw">while</span> <span class="kc">True</span>:</div>
+          <div class="code-line dim" data-line="3"><span class="ln">3</span>        response = client.messages.create(</div>
+          <div class="code-line dim" data-line="4"><span class="ln">4</span>            model=MODEL, messages=messages, tools=TOOLS)</div>
+          <div class="code-line dim" data-line="5"><span class="ln">5</span>        messages.append({<span class="st">"role"</span>: <span class="st">"assistant"</span>, ...})</div>
+          <div class="code-line dim" data-line="6"><span class="ln">6</span></div>
+          <div class="code-line dim" data-line="7"><span class="ln">7</span>        <span class="kw">if</span> response.stop_reason != <span class="st">"tool_use"</span>:</div>
+          <!-- Stop hook -->
+          <div class="code-line new-line" data-line="8"><span class="ln">8</span>            force = <span class="fn">trigger_hooks</span>(<span class="st">"Stop"</span>, messages)</div>
+          <div class="code-line new-line" data-line="9"><span class="ln">9</span>            <span class="kw">if</span> force: messages.append(...); <span class="kw">continue</span></div>
+          <div class="code-line dim" data-line="10"><span class="ln">10</span>            <span class="kw">return</span></div>
+          <div class="code-line dim" data-line="11"><span class="ln">11</span></div>
+          <div class="code-line dim" data-line="12"><span class="ln">12</span>        results = []</div>
+          <div class="code-line dim" data-line="13"><span class="ln">13</span>        <span class="kw">for</span> block <span class="kw">in</span> response.content:</div>
+          <div class="code-line dim" data-line="14"><span class="ln">14</span>            <span class="kw">if</span> block.type == <span class="st">"tool_use"</span>:</div>
+          <!-- Changed: check_permission → trigger_hooks -->
+          <div class="code-line old-line" data-line="15"><span class="ln">15</span><s>                <span class="kw">if not</span> <span class="fn">check_permission</span>(block):</s></div>
+          <div class="code-line new-line" data-line="16"><span class="ln">16</span>                blocked = <span class="fn">trigger_hooks</span>(<span class="st">"PreToolUse"</span>, block)</div>
+          <div class="code-line dim" data-line="17"><span class="ln">17</span>                <span class="kw">if</span> blocked: ...; <span class="kw">continue</span></div>
+          <div class="code-line dim" data-line="18"><span class="ln">18</span>                output = <span class="fn">TOOL_HANDLERS</span>[block.name](**block.input)</div>
+          <!-- PostToolUse hook -->
+          <div class="code-line new-line" data-line="19"><span class="ln">19</span>                <span class="fn">trigger_hooks</span>(<span class="st">"PostToolUse"</span>, block, output)</div>
+          <div class="code-line dim" data-line="20"><span class="ln">20</span>                results.append({<span class="st">"type"</span>: <span class="st">"tool_result"</span>, ...})</div>
+        </div>
+      </div>
+
+      <!-- Hook registry card -->
+      <div class="hook-card" id="hook-card">
+        <div class="hook-title">HOOKS 注册表</div>
+        <div class="hook-events">
+          <div class="hook-event ev-1">
+            <span class="ev-dot" style="background:#F24E1E"></span>
+            <span class="ev-name">UserPromptSubmit</span>
+            <span class="ev-desc">用户输入后</span>
+          </div>
+          <div class="hook-event ev-2">
+            <span class="ev-dot" style="background:#A259FF"></span>
+            <span class="ev-name">PreToolUse</span>
+            <span class="ev-desc">工具执行前</span>
+          </div>
+          <div class="hook-event ev-3">
+            <span class="ev-dot" style="background:#1ABCFE"></span>
+            <span class="ev-name">PostToolUse</span>
+            <span class="ev-desc">工具执行后</span>
+          </div>
+          <div class="hook-event ev-4">
+            <span class="ev-dot" style="background:#0ACF83"></span>
+            <span class="ev-name">Stop</span>
+            <span class="ev-desc">循环退出前</span>
+          </div>
+        </div>
+        <div class="hook-note">扩展通过 register_hook() 添加<br>循环只调用 trigger_hooks()</div>
+      </div>
+
+      <!-- Pattern card: s02 vs s04 -->
+      <div class="pattern-card" id="pattern-card">
+        <div class="pattern-row">
+          <span class="pattern-ch">s02</span>
+          <span class="pattern-old">run_bash()</span>
+          <span class="pattern-arrow">→</span>
+          <span class="pattern-new">TOOL_HANDLERS[name]()</span>
+        </div>
+        <div class="pattern-row">
+          <span class="pattern-ch">s04</span>
+          <span class="pattern-old">check_permission()</span>
+          <span class="pattern-arrow">→</span>
+          <span class="pattern-new">trigger_hooks()</span>
+        </div>
+        <div class="pattern-label">同一个模式：硬编码 → 注册表</div>
+      </div>
+
+      <!-- Insight -->
+      <div class="insight-card" id="insight-hooks">
+        <div class="insight-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0ACF83" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="insight-text">挂在循环上，不写进循环里。四个钩子覆盖完整生命周期。</div>
+      </div>
+
+      <div class="accent-rule"></div>
+    </div>
+
+    <style>
+      [data-composition-id="scene-hooks"] {
+        width: 1920px; height: 1080px;
+        position: absolute; overflow: hidden;
+        background: #0a0a0f; color: white;
+        font-family: "Inter", sans-serif;
+      }
+      [data-composition-id="scene-hooks"] .canvas { position: absolute; inset: 0; }
+      [data-composition-id="scene-hooks"] .dot-grid {
+        position: absolute; inset: 0;
+        background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+      [data-composition-id="scene-hooks"] .glow {
+        position: absolute; border-radius: 50%; pointer-events: none;
+        filter: blur(120px); opacity: 0;
+      }
+      [data-composition-id="scene-hooks"] .glow-green {
+        width: 500px; height: 500px; background: #0ACF83;
+        left: 300px; top: 300px;
+      }
+      [data-composition-id="scene-hooks"] .section-label {
+        position: absolute; top: 50px; left: 80px;
+        display: flex; align-items: center; gap: 16px;
+        opacity: 0;
+      }
+      [data-composition-id="scene-hooks"] .label-id {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px; font-weight: 600; color: #0ACF83;
+        text-transform: uppercase; letter-spacing: 0.15em;
+      }
+      [data-composition-id="scene-hooks"] .label-phrase {
+        font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.85);
+        letter-spacing: 0.02em;
+        opacity: 0; transform: translateX(-10px);
+      }
+      [data-composition-id="scene-hooks"] .label-fx {
+        position: absolute; left: 120px; top: 50%;
+        width: 0; height: 0; pointer-events: none;
+      }
+      [data-composition-id="scene-hooks"] .label-glow {
+        position: absolute; width: 260px; height: 50px;
+        left: -130px; top: -25px; border-radius: 25px;
+        background: radial-gradient(ellipse, rgba(10,207,131,0.15) 0%, transparent 70%);
+        opacity: 0;
+      }
+      [data-composition-id="scene-hooks"] .label-dot {
+        position: absolute; width: 5px; height: 5px;
+        border-radius: 50%; background: #0ACF83;
+        box-shadow: 0 0 8px rgba(10,207,131,0.6);
+        opacity: 0;
+      }
+      [data-composition-id="scene-hooks"] .scene-title {
+        position: absolute; top: 85px; left: 80px;
+        font-size: 32px; font-weight: 700; color: rgba(255,255,255,0.9);
+        opacity: 0; transform: translateY(10px);
+      }
+      /* Code block */
+      [data-composition-id="scene-hooks"] .code-block {
+        position: absolute; left: 80px; top: 160px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px; padding: 28px 40px;
+        min-width: 960px;
+      }
+      [data-composition-id="scene-hooks"] .code-lines {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px; line-height: 1.7;
+      }
+      [data-composition-id="scene-hooks"] .code-line {
+        padding: 2px 8px; border-radius: 4px;
+        white-space: nowrap;
+      }
+      [data-composition-id="scene-hooks"] .code-line.dim {
+        opacity: 0; transform: translateX(-10px);
+        color: rgba(255,255,255,0.25);
+      }
+      [data-composition-id="scene-hooks"] .code-line.old-line {
+        opacity: 0; background: rgba(242,78,30,0.06);
+        border-left: 3px solid rgba(242,78,30,0.4);
+        padding-left: 5px; color: rgba(242,78,30,0.5);
+      }
+      [data-composition-id="scene-hooks"] .code-line.old-line s {
+        text-decoration: line-through; text-decoration-color: rgba(242,78,30,0.6);
+      }
+      [data-composition-id="scene-hooks"] .code-line.new-line {
+        opacity: 0; transform: translateX(-10px);
+        background: rgba(10,207,131,0.08);
+        border-left: 3px solid #0ACF83;
+        padding-left: 5px;
+      }
+      [data-composition-id="scene-hooks"] .ln {
+        display: inline-block; width: 36px;
+        color: rgba(255,255,255,0.15); font-size: 14px;
+        text-align: right; margin-right: 12px;
+        user-select: none;
+      }
+      [data-composition-id="scene-hooks"] .kw { color: #C586C0; }
+      [data-composition-id="scene-hooks"] .fn { color: #DCDCAA; }
+      [data-composition-id="scene-hooks"] .kc { color: #569CD6; }
+      [data-composition-id="scene-hooks"] .st { color: #CE9178; }
+      /* Hook card */
+      [data-composition-id="scene-hooks"] .hook-card {
+        position: absolute; right: 80px; top: 160px;
+        background: rgba(10,207,131,0.04);
+        border: 1px solid rgba(10,207,131,0.15);
+        border-radius: 16px; padding: 28px 32px;
+        opacity: 0; transform: translateX(20px);
+      }
+      [data-composition-id="scene-hooks"] .hook-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; font-weight: 600; color: #0ACF83;
+        margin-bottom: 20px;
+      }
+      [data-composition-id="scene-hooks"] .hook-events {
+        display: flex; flex-direction: column; gap: 10px;
+      }
+      [data-composition-id="scene-hooks"] .hook-event {
+        display: flex; align-items: center; gap: 14px;
+        padding: 16px 20px; border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        opacity: 0; transform: translateX(10px);
+      }
+      [data-composition-id="scene-hooks"] .ev-dot {
+        width: 12px; height: 12px; border-radius: 50%;
+        flex-shrink: 0;
+      }
+      [data-composition-id="scene-hooks"] .ev-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px; font-weight: 600; color: white;
+        width: 200px;
+      }
+      [data-composition-id="scene-hooks"] .ev-desc {
+        font-size: 17px; color: rgba(255,255,255,0.35);
+      }
+      [data-composition-id="scene-hooks"] .hook-note {
+        margin-top: 16px; font-size: 16px;
+        color: rgba(255,255,255,0.25);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding-top: 12px; line-height: 1.6;
+      }
+      /* Pattern card */
+      [data-composition-id="scene-hooks"] .pattern-card {
+        position: absolute; right: 80px; top: 640px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px; padding: 24px 28px;
+        opacity: 0; transform: translateX(20px);
+      }
+      [data-composition-id="scene-hooks"] .pattern-row {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 12px; font-family: "JetBrains Mono", monospace;
+        font-size: 18px;
+      }
+      [data-composition-id="scene-hooks"] .pattern-ch {
+        font-size: 15px; font-weight: 700;
+        padding: 4px 10px; border-radius: 7px;
+        background: rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.4);
+        width: 36px; text-align: center;
+      }
+      [data-composition-id="scene-hooks"] .pattern-old {
+        color: rgba(242,78,30,0.6);
+        text-decoration: line-through;
+      }
+      [data-composition-id="scene-hooks"] .pattern-arrow {
+        color: rgba(255,255,255,0.2);
+      }
+      [data-composition-id="scene-hooks"] .pattern-new {
+        color: #0ACF83;
+      }
+      [data-composition-id="scene-hooks"] .pattern-label {
+        font-size: 16px; color: rgba(255,255,255,0.3);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding-top: 10px; margin-top: 4px;
+      }
+      /* Insight */
+      [data-composition-id="scene-hooks"] .insight-card {
+        position: absolute; left: 80px; bottom: 90px;
+        display: flex; align-items: center; gap: 16px;
+        padding: 20px 28px; border-radius: 14px;
+        background: rgba(10,207,131,0.04);
+        border: 1px solid rgba(10,207,131,0.15);
+        opacity: 0; transform: translateY(10px);
+      }
+      [data-composition-id="scene-hooks"] .insight-icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: rgba(10,207,131,0.08); display: grid; place-items: center;
+        flex-shrink: 0;
+      }
+      [data-composition-id="scene-hooks"] .insight-text {
+        font-size: 20px; font-weight: 500; color: rgba(255,255,255,0.7);
+        max-width: 800px;
+      }
+      [data-composition-id="scene-hooks"] .accent-rule {
+        position: absolute; bottom: 50px; left: 80px; right: 80px;
+        height: 1px; background: rgba(255,255,255,0.06);
+        transform: scaleX(0); transform-origin: left;
+      }
+    </style>
+
+    <script>
+      (function () {
+        var tl = gsap.timeline({ paused: true });
+        var sel = '[data-composition-id="scene-hooks"]';
+
+        tl.to(sel + ' .glow-green', { opacity: 0.08, duration: 1, ease: "power2.out" }, 0);
+        tl.to(sel + ' .section-label', { opacity: 1, duration: 0.2 }, 0);
+        tl.to(sel + ' .label-id', { opacity: 1, duration: 0.3, ease: "power2.out" }, 0);
+        tl.fromTo(sel + ' .label-phrase', { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.5, ease: "back.out(2)" }, 0.3);
+        tl.to(sel + ' .scene-title', { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.5);
+
+        // Label particle ring
+        tl.to(sel + ' .label-glow', { opacity: 1, duration: 0.6 }, 0.5);
+        tl.to(sel + ' .label-dot', { opacity: 0.9, duration: 0.3, stagger: 0.08 }, 0.6);
+        var orbitTl = gsap.timeline({ repeat: 6 });
+        var dots = document.querySelectorAll(sel + ' .label-dot');
+        var radii = [30, 40, 50, 35, 45, 38];
+        dots.forEach(function (dot, i) {
+          var startAngle = i * 60;
+          orbitTl.to(dot, {
+            duration: 3 + i * 0.4, ease: "none", repeat: 6,
+            onUpdate: function () {
+              var progress = this.progress();
+              var angle = (startAngle + progress * 360) * Math.PI / 180;
+              gsap.set(dot, { x: Math.cos(angle) * radii[i], y: Math.sin(angle) * radii[i] * 0.5 });
+            }
+          }, 0);
+        });
+        tl.add(orbitTl, 0.8);
+        gsap.to(sel + ' .label-glow', { scale: 1.2, duration: 2, ease: "sine.inOut", yoyo: true, repeat: 10 });
+
+        // Dim lines
+        tl.to(sel + ' .code-line.dim', { opacity: 0.25, x: 0, duration: 0.3, stagger: 0.03 }, 0.6);
+
+        // Old line (check_permission → strikethrough)
+        tl.to(sel + ' .old-line', { opacity: 0.6, duration: 0.4 }, 2.5);
+
+        // New lines (trigger_hooks) — stagger
+        tl.to(sel + ' .new-line', { opacity: 1, x: 0, duration: 0.5, ease: "back.out(2)", stagger: 0.15 }, 3.0);
+
+        // Hook card
+        tl.to(sel + ' .hook-card', { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 4.5);
+        tl.to(sel + ' .hook-event', { opacity: 1, x: 0, duration: 0.3, stagger: 0.12, ease: "power2.out" }, 5.0);
+
+        // Pattern card
+        tl.to(sel + ' .pattern-card', { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 6.0);
+
+        // Insight
+        tl.to(sel + ' .insight-card', { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 7.0);
+        tl.to(sel + ' .accent-rule', { scaleX: 1, duration: 1, ease: "power2.out" }, 6.5);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["scene-hooks"] = tl;
+      })();
+    </script>
+  </div>
+</template>

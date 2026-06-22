@@ -1,0 +1,281 @@
+<template id="scene-tools-template">
+  <div data-composition-id="scene-tools" data-width="1920" data-height="1080" data-duration="17">
+    <div class="canvas">
+      <div class="dot-grid"></div>
+      <div class="glow glow-purple"></div>
+
+      <div class="section-label">
+        <span class="label-id">02 · Tool Use</span><span class="label-phrase">加工具，不改循环</span>
+        <div class="label-fx">
+          <div class="label-glow"></div>
+          <div class="label-dot dot-1"></div>
+          <div class="label-dot dot-2"></div>
+          <div class="label-dot dot-3"></div>
+          <div class="label-dot dot-4"></div>
+          <div class="label-dot dot-5"></div>
+          <div class="label-dot dot-6"></div>
+        </div>
+      </div>
+      <div class="scene-title">循环一行没改，只换了执行方式。</div>
+
+      <!-- Code block: same loop, one line changed -->
+      <div class="code-block">
+        <div class="code-lines">
+          <div class="code-line dim" data-line="1"><span class="ln">1</span><span class="kw">def</span> <span class="fn">agent_loop</span>(messages):</div>
+          <div class="code-line dim" data-line="2"><span class="ln">2</span>    <span class="kw">while</span> <span class="kc">True</span>:</div>
+          <div class="code-line dim" data-line="3"><span class="ln">3</span>        response = client.messages.create(</div>
+          <div class="code-line dim" data-line="4"><span class="ln">4</span>            model=MODEL, messages=messages, tools=TOOLS)</div>
+          <div class="code-line dim" data-line="5"><span class="ln">5</span>        messages.append({<span class="st">"role"</span>: <span class="st">"assistant"</span>, ...})</div>
+          <div class="code-line dim" data-line="6"><span class="ln">6</span></div>
+          <div class="code-line dim" data-line="7"><span class="ln">7</span>        <span class="kw">if</span> response.stop_reason != <span class="st">"tool_use"</span>:</div>
+          <div class="code-line dim" data-line="8"><span class="ln">8</span>            <span class="kw">return</span></div>
+          <div class="code-line dim" data-line="9"><span class="ln">9</span></div>
+          <div class="code-line dim" data-line="10"><span class="ln">10</span>        results = []</div>
+          <div class="code-line dim" data-line="11"><span class="ln">11</span>        <span class="kw">for</span> block <span class="kw">in</span> response.content:</div>
+          <div class="code-line dim" data-line="12"><span class="ln">12</span>            <span class="kw">if</span> block.type == <span class="st">"tool_use"</span>:</div>
+          <!-- Changed line: old -->
+          <div class="code-line old-line" data-line="13"><span class="ln">13</span><s>                output = <span class="fn">run_bash</span>(block.input[<span class="st">"command"</span>])</s></div>
+          <!-- Changed line: new -->
+          <div class="code-line new-line" data-line="14"><span class="ln">14</span>                output = <span class="fn">TOOL_HANDLERS</span>[block.name](**block.input)</div>
+          <div class="code-line dim" data-line="15"><span class="ln">15</span>                results.append({<span class="st">"type"</span>: <span class="st">"tool_result"</span>, ...})</div>
+          <div class="code-line dim" data-line="16"><span class="ln">16</span>        messages.append({<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: results})</div>
+        </div>
+      </div>
+
+      <!-- Dispatch table card -->
+      <div class="dispatch-card" id="dispatch-card">
+        <div class="dispatch-title">TOOL_HANDLERS</div>
+        <div class="dispatch-rows">
+          <div class="dispatch-row"><span class="dk">"bash"</span> → <span class="dv">run_bash</span></div>
+          <div class="dispatch-row"><span class="dk">"read_file"</span> → <span class="dv">run_read</span></div>
+          <div class="dispatch-row"><span class="dk">"write_file"</span> → <span class="dv">run_write</span></div>
+          <div class="dispatch-row"><span class="dk">"edit_file"</span> → <span class="dv">run_edit</span></div>
+          <div class="dispatch-row"><span class="dk">"glob"</span> → <span class="dv">run_glob</span></div>
+        </div>
+        <div class="dispatch-note">加工具 = 加一行映射。循环不变。</div>
+      </div>
+
+      <!-- Insight -->
+      <div class="insight-card" id="insight-tools">
+        <div class="insight-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A259FF" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6m0-6l-6 6"/></svg>
+        </div>
+        <div class="insight-text">硬编码 → 查表分发。加一个工具只需两步：定义 schema + 注册 handler。</div>
+      </div>
+
+      <div class="accent-rule"></div>
+    </div>
+
+    <style>
+      [data-composition-id="scene-tools"] {
+        width: 1920px; height: 1080px;
+        position: absolute; overflow: hidden;
+        background: #0a0a0f; color: white;
+        font-family: "Inter", sans-serif;
+      }
+      [data-composition-id="scene-tools"] .canvas { position: absolute; inset: 0; }
+      [data-composition-id="scene-tools"] .dot-grid {
+        position: absolute; inset: 0;
+        background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+      [data-composition-id="scene-tools"] .glow {
+        position: absolute; border-radius: 50%; pointer-events: none;
+        filter: blur(120px); opacity: 0;
+      }
+      [data-composition-id="scene-tools"] .glow-purple {
+        width: 500px; height: 500px; background: #A259FF;
+        left: -100px; top: 300px;
+      }
+      [data-composition-id="scene-tools"] .section-label {
+        position: absolute; top: 50px; left: 80px;
+        display: flex; align-items: center; gap: 16px;
+        opacity: 0;
+      }
+      [data-composition-id="scene-tools"] .label-id {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px; font-weight: 600; color: #A259FF;
+        text-transform: uppercase; letter-spacing: 0.15em;
+      }
+      [data-composition-id="scene-tools"] .label-phrase {
+        font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.85);
+        letter-spacing: 0.02em;
+        opacity: 0; transform: translateX(-10px);
+      }
+      [data-composition-id="scene-tools"] .label-fx {
+        position: absolute; left: 120px; top: 50%;
+        width: 0; height: 0; pointer-events: none;
+      }
+      [data-composition-id="scene-tools"] .label-glow {
+        position: absolute; width: 260px; height: 50px;
+        left: -130px; top: -25px; border-radius: 25px;
+        background: radial-gradient(ellipse, rgba(162,89,255,0.15) 0%, transparent 70%);
+        opacity: 0;
+      }
+      [data-composition-id="scene-tools"] .label-dot {
+        position: absolute; width: 5px; height: 5px;
+        border-radius: 50%; background: #A259FF;
+        box-shadow: 0 0 8px rgba(162,89,255,0.6);
+        opacity: 0;
+      }
+      [data-composition-id="scene-tools"] .scene-title {
+        position: absolute; top: 85px; left: 80px;
+        font-size: 32px; font-weight: 700; color: rgba(255,255,255,0.9);
+        opacity: 0; transform: translateY(10px);
+      }
+      /* Code block */
+      [data-composition-id="scene-tools"] .code-block {
+        position: absolute; left: 80px; top: 160px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px; padding: 32px 40px;
+        min-width: 1000px;
+      }
+      [data-composition-id="scene-tools"] .code-lines {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px; line-height: 1.8;
+      }
+      [data-composition-id="scene-tools"] .code-line {
+        padding: 2px 8px; border-radius: 4px;
+        white-space: nowrap;
+      }
+      [data-composition-id="scene-tools"] .code-line.dim {
+        opacity: 0; transform: translateX(-10px);
+        color: rgba(255,255,255,0.25);
+      }
+      [data-composition-id="scene-tools"] .code-line.old-line {
+        opacity: 0; background: rgba(242,78,30,0.06);
+        border-left: 3px solid rgba(242,78,30,0.4);
+        padding-left: 5px; color: rgba(242,78,30,0.5);
+      }
+      [data-composition-id="scene-tools"] .code-line.old-line s {
+        text-decoration: line-through; text-decoration-color: rgba(242,78,30,0.6);
+      }
+      [data-composition-id="scene-tools"] .code-line.new-line {
+        opacity: 0; transform: translateX(-10px);
+        background: rgba(162,89,255,0.08);
+        border-left: 3px solid #A259FF;
+        padding-left: 5px;
+      }
+      [data-composition-id="scene-tools"] .ln {
+        display: inline-block; width: 40px;
+        color: rgba(255,255,255,0.15); font-size: 16px;
+        text-align: right; margin-right: 16px;
+        user-select: none;
+      }
+      [data-composition-id="scene-tools"] .kw { color: #C586C0; }
+      [data-composition-id="scene-tools"] .fn { color: #DCDCAA; }
+      [data-composition-id="scene-tools"] .kc { color: #569CD6; }
+      [data-composition-id="scene-tools"] .st { color: #CE9178; }
+      /* Dispatch card */
+      [data-composition-id="scene-tools"] .dispatch-card {
+        position: absolute; right: 80px; top: 200px;
+        background: rgba(162,89,255,0.04);
+        border: 1px solid rgba(162,89,255,0.15);
+        border-radius: 16px; padding: 32px 36px;
+        opacity: 0; transform: translateX(20px);
+      }
+      [data-composition-id="scene-tools"] .dispatch-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; font-weight: 600; color: #A259FF;
+        margin-bottom: 20px;
+      }
+      [data-composition-id="scene-tools"] .dispatch-rows {
+        display: flex; flex-direction: column; gap: 8px;
+      }
+      [data-composition-id="scene-tools"] .dispatch-row {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 21px; color: rgba(255,255,255,0.5);
+        opacity: 0; transform: translateX(10px);
+      }
+      [data-composition-id="scene-tools"] .dk { color: #CE9178; }
+      [data-composition-id="scene-tools"] .dv { color: #DCDCAA; }
+      [data-composition-id="scene-tools"] .dispatch-note {
+        margin-top: 16px; font-size: 18px;
+        color: rgba(255,255,255,0.3);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding-top: 12px;
+      }
+      /* Insight */
+      [data-composition-id="scene-tools"] .insight-card {
+        position: absolute; left: 80px; bottom: 90px;
+        display: flex; align-items: center; gap: 16px;
+        padding: 20px 28px; border-radius: 14px;
+        background: rgba(162,89,255,0.04);
+        border: 1px solid rgba(162,89,255,0.15);
+        opacity: 0; transform: translateY(10px);
+      }
+      [data-composition-id="scene-tools"] .insight-icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: rgba(162,89,255,0.08); display: grid; place-items: center;
+        flex-shrink: 0;
+      }
+      [data-composition-id="scene-tools"] .insight-text {
+        font-size: 20px; font-weight: 500; color: rgba(255,255,255,0.7);
+        max-width: 800px;
+      }
+      [data-composition-id="scene-tools"] .accent-rule {
+        position: absolute; bottom: 50px; left: 80px; right: 80px;
+        height: 1px; background: rgba(255,255,255,0.06);
+        transform: scaleX(0); transform-origin: left;
+      }
+    </style>
+
+    <script>
+      (function () {
+        var tl = gsap.timeline({ paused: true });
+        var sel = '[data-composition-id="scene-tools"]';
+
+        tl.to(sel + ' .glow-purple', { opacity: 0.08, duration: 1, ease: "power2.out" }, 0);
+        tl.to(sel + ' .section-label', { opacity: 1, duration: 0.2 }, 0);
+        tl.to(sel + ' .label-id', { opacity: 1, duration: 0.3, ease: "power2.out" }, 0);
+        tl.fromTo(sel + ' .label-phrase', { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.5, ease: "back.out(2)" }, 0.3);
+        tl.to(sel + ' .scene-title', { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.5);
+
+        // Label particle ring
+        tl.to(sel + ' .label-glow', { opacity: 1, duration: 0.6 }, 0.5);
+        tl.to(sel + ' .label-dot', { opacity: 0.9, duration: 0.3, stagger: 0.08 }, 0.6);
+        var orbitTl = gsap.timeline({ repeat: 4 });
+        var dots = document.querySelectorAll(sel + ' .label-dot');
+        var radii = [30, 40, 50, 35, 45, 38];
+        dots.forEach(function (dot, i) {
+          var startAngle = i * 60;
+          orbitTl.to(dot, {
+            duration: 3 + i * 0.4, ease: "none", repeat: 4,
+            onUpdate: function () {
+              var progress = this.progress();
+              var angle = (startAngle + progress * 360) * Math.PI / 180;
+              gsap.set(dot, { x: Math.cos(angle) * radii[i], y: Math.sin(angle) * radii[i] * 0.5 });
+            }
+          }, 0);
+        });
+        tl.add(orbitTl, 0.8);
+        gsap.to(sel + ' .label-glow', { scale: 1.2, duration: 2, ease: "sine.inOut", yoyo: true, repeat: 7 });
+
+        // Dim lines appear (all at once, low opacity)
+        tl.to(sel + ' .code-line.dim', { opacity: 0.25, x: 0, duration: 0.3, stagger: 0.04 }, 0.6);
+
+        // Old line with strikethrough
+        tl.to(sel + ' .old-line', { opacity: 0.6, duration: 0.4, ease: "power2.out" }, 2.0);
+
+        // New line — the highlight moment
+        tl.to(sel + ' .new-line', { opacity: 1, x: 0, duration: 0.5, ease: "back.out(2)" }, 2.5);
+
+        // Pulse the new line
+        tl.to(sel + ' .new-line', { boxShadow: '0 0 30px rgba(162,89,255,0.2)', duration: 0.3 }, 3.0);
+        tl.to(sel + ' .new-line', { boxShadow: '0 0 0px rgba(162,89,255,0)', duration: 0.5 }, 3.3);
+
+        // Dispatch card
+        tl.to(sel + ' .dispatch-card', { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 3.5);
+        tl.to(sel + ' .dispatch-row', { opacity: 1, x: 0, duration: 0.3, stagger: 0.1, ease: "power2.out" }, 4.0);
+
+        // Insight
+        tl.to(sel + ' .insight-card', { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 5.0);
+        tl.to(sel + ' .accent-rule', { scaleX: 1, duration: 1, ease: "power2.out" }, 4.5);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["scene-tools"] = tl;
+      })();
+    </script>
+  </div>
+</template>
